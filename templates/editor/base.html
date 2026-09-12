@@ -7,35 +7,33 @@
     <title>{% block title %}Редакционный стол — Dear Editors{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=PT+Serif:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'news/editor.css' %}">
 </head>
 <body>
-    <header class="desk-head">
-        <div class="desk-wrap desk-head__inner">
-            <div>
-                <a class="desk-brand" href="{% url 'editor-dashboard' %}">Dear Editors</a>
-                <span class="desk-kicker">Редакционный стол</span>
-            </div>
-            {% if request.user.is_authenticated %}
-                <nav class="desk-nav">
-                    <a href="{% url 'article-list' %}" target="_blank">Открыть издание ↗</a>
-                    <form method="post" action="{% url 'editor-logout' %}">
-                        {% csrf_token %}
-                        <button type="submit" class="desk-link-button">Выйти</button>
-                    </form>
-                </nav>
-            {% endif %}
-        </div>
-    </header>
+<header class="wrap masthead">
+    <div class="masthead__left">
+        <a class="nameplate" href="{% if request.user.is_authenticated %}{% url 'editor-dashboard' %}{% else %}{% url 'article-list' %}{% endif %}">Dear Editors</a>
+        <span class="masthead__desk">Редакционный стол</span>
+    </div>
+    {% if request.user.is_authenticated %}
+        <nav class="masthead__nav">
+            <a href="{% url 'article-list' %}" target="_blank">Открыть издание ↗</a>
+            <form method="post" action="{% url 'editor-logout' %}">
+                {% csrf_token %}
+                <button class="nav-link" type="submit">Выйти</button>
+            </form>
+        </nav>
+    {% endif %}
+</header>
 
-    <main class="desk-wrap desk-main">
-        {% if messages %}
-            <div class="desk-messages">
-                {% for message in messages %}<p>{{ message }}</p>{% endfor %}
-            </div>
-        {% endif %}
-        {% block content %}{% endblock %}
-    </main>
+<main class="wrap {% block main_class %}{% endblock %}">
+    {% if messages %}
+        <div class="flash">
+            {% for message in messages %}<p>{{ message }}</p>{% endfor %}
+        </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+</main>
 </body>
 </html>

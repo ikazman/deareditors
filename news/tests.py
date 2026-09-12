@@ -15,14 +15,14 @@ class PublishingTests(TestCase):
         article = Article.objects.create(
             title="До редакции дошел слух",
             lead="Кажется, что-то происходит.",
-            body="Будем наблюдать.",
+            body="Редакция проверяет сведения.",
             status=Article.Status.PUBLISHED,
         )
         response = self.client.get(reverse("article-list"))
         self.assertContains(response, article.title)
         detail = self.client.get(article.get_absolute_url())
         self.assertEqual(detail.status_code, 200)
-        self.assertContains(detail, "Будем наблюдать.")
+        self.assertContains(detail, "Будем наблюдать.", count=1)
 
     def test_slug_is_generated_and_kept_unique(self):
         first = Article.objects.create(title="Очень важный слух", body="Первый")
@@ -84,6 +84,23 @@ class EditorialDeskTests(TestCase):
         self.assertEqual(article.status, Article.Status.PUBLISHED)
         self.assertIsNotNone(article.published_at)
         self.assertContains(self.client.get(reverse("article-list")), article.title)
+
+    def test_editor_strips_automatic_signoff_from_body(self):
+        self.client.force_login(self.user)
+        self.client.post(
+            reverse("editor-article-create"),
+            {
+                "title": "Финал принадлежит редакции",
+                "lead": "Редакционная политика.",
+                "body": "Основной текст.\n\nБудем наблюдать.",
+                "author_name": "Дорогая редакция",
+                "action": "publish",
+            },
+        )
+        article = Article.objects.get(title="Финал принадлежит редакции")
+        self.assertEqual(article.body, "Основной текст.")
+        detail = self.client.get(article.get_absolute_url())
+        self.assertContains(detail, "Будем наблюдать.", count=1)
 
     def test_editor_can_unpublish_article(self):
         article = Article.objects.create(

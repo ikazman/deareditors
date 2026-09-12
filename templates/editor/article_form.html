@@ -1,53 +1,65 @@
 {% extends 'editor/base.html' %}
 
 {% block title %}{% if article.pk %}Правка{% else %}Новая заметка{% endif %} — Dear Editors{% endblock %}
+{% block main_class %}wrap--read{% endblock %}
 
 {% block content %}
-<section class="form-head">
-    <a class="desk-back" href="{% url 'editor-dashboard' %}">← К материалам</a>
-    <p class="desk-rubric">{% if article.pk %}Редактура{% else %}Новый материал{% endif %}</p>
-    <div class="form-head__line">
-        <h1>{% if article.pk %}{{ article.title }}{% else %}Новая заметка{% endif %}</h1>
-        {% if article.pk %}<span class="status-pill status-pill--{{ article.status }}">{{ article.get_status_display }}</span>{% endif %}
-    </div>
-</section>
+<a class="backlink" href="{% url 'editor-dashboard' %}">К материалам</a>
 
-<form method="post" class="editor-form article-editor">
+<div class="page-head">
+    <div>
+        <p class="rubric">{% if article.pk %}Редактура{% else %}Новый материал{% endif %}</p>
+        <h1 class="page-title">{% if article.pk %}Правка заметки{% else %}Новая заметка{% endif %}</h1>
+    </div>
+    {% if article.pk %}
+        <div class="desk-row__meta form-status">
+            {% if article.status == 'published' %}
+                <span class="status">Опубликовано {{ article.published_at|date:"d.m · H:i" }}</span>
+            {% else %}
+                <span class="status status--draft">Черновик</span>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<form class="form" method="post">
     {% csrf_token %}
     {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
 
-    <div class="field field--title">
-        <label for="{{ form.title.id_for_label }}">Заголовок</label>
+    <div class="field">
+        <label class="field__label" for="{{ form.title.id_for_label }}">Заголовок</label>
         {{ form.title }}
         {{ form.title.errors }}
     </div>
 
     <div class="field">
-        <label for="{{ form.lead.id_for_label }}">Лид</label>
+        <label class="field__label" for="{{ form.lead.id_for_label }}">Лид</label>
         {{ form.lead }}
+        <span class="field__hint">Можно не заполнять — тогда в ленте останется только заголовок.</span>
         {{ form.lead.errors }}
     </div>
 
     <div class="field">
-        <label for="{{ form.body.id_for_label }}">Текст</label>
+        <label class="field__label" for="{{ form.body.id_for_label }}">Текст</label>
         {{ form.body }}
+        <span class="field__hint">Финальное «Будем наблюдать.» издание добавит само.</span>
         {{ form.body.errors }}
     </div>
 
-    <div class="field field--author">
-        <label for="{{ form.author_name.id_for_label }}">Подпись редакции</label>
+    <div class="field">
+        <label class="field__label" for="{{ form.author_name.id_for_label }}">Подпись редакции</label>
         {{ form.author_name }}
         {{ form.author_name.errors }}
     </div>
 
-    <div class="editor-actions">
+    <div class="actions">
         {% if article.pk and article.status == 'published' %}
-            <button class="button button--primary" type="submit" name="action" value="save">Сохранить изменения</button>
-            <button class="button button--quiet" type="submit" name="action" value="draft">Снять с публикации</button>
-            <a class="button button--text" href="{{ article.get_absolute_url }}" target="_blank">Открыть заметку ↗</a>
+            <button class="btn" type="submit" name="action" value="save">Сохранить изменения</button>
+            <a class="btn btn--quiet" href="{{ article.get_absolute_url }}" target="_blank">Открыть заметку</a>
+            <button class="btn btn--danger" type="submit" name="action" value="draft">Снять с публикации</button>
         {% else %}
-            <button class="button button--quiet" type="submit" name="action" value="draft">Сохранить черновик</button>
-            <button class="button button--primary" type="submit" name="action" value="publish">Опубликовать</button>
+            <button class="btn" type="submit" name="action" value="publish">Опубликовать</button>
+            <button class="btn btn--quiet" type="submit" name="action" value="draft">Сохранить черновик</button>
         {% endif %}
     </div>
 </form>
