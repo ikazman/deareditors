@@ -16,10 +16,8 @@ class Command(BaseCommand):
             self.stdout.write("Editor bootstrap skipped: credentials are not configured.")
             return
 
-        if not username or not password:
-            raise CommandError(
-                "DEAR_EDITORS_ADMIN_USERNAME and DEAR_EDITORS_ADMIN_PASSWORD must be set together."
-            )
+        if not username:
+            raise CommandError("DEAR_EDITORS_ADMIN_USERNAME is required when an admin password is configured.")
 
         User = get_user_model()
         existing = User.objects.filter(username=username).first()
@@ -30,6 +28,12 @@ class Command(BaseCommand):
                 )
             self.stdout.write(f"Editor {username!r} already exists; bootstrap skipped.")
             return
+
+        if not password:
+            raise CommandError(
+                "DEAR_EDITORS_ADMIN_PASSWORD is required to create the first editor. "
+                "After that editor exists, the password variable may be removed."
+            )
 
         User.objects.create_superuser(username=username, email=email, password=password)
         self.stdout.write(self.style.SUCCESS(f"Editor {username!r} created."))
