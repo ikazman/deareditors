@@ -1,0 +1,60 @@
+.access-page {
+    min-height: 58vh;
+}
+
+.public-flash {
+    max-width: 34rem;
+    margin-top: 1.5rem;
+    padding: .75rem 0 .75rem 1rem;
+    border-left: 2px solid var(--rubric);
+    color: var(--ink-soft);
+    font-size: .9rem;
+}
+
+.public-flash p {
+    margin: 0;
+}
+
+.colophon-session {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: .35rem 1rem;
+    margin-top: .35rem;
+}
+
+.colophon-session .colophon-link--primary {
+    margin-top: 0;
+}
+
+.colophon-session form {
+    margin: 0;
+}
+
+.colophon-button {
+    padding: 0 0 1px;
+    border: 0;
+    border-bottom: 1px solid var(--rule);
+    background: transparent;
+    color: var(--ink-soft);
+    font: inherit;
+    cursor: pointer;
+}
+
+.colophon-button:hover {
+    color: var(--rubric);
+    border-bottom-color: var(--rubric);
+}
+
+.colophon-private {
+    margin-top: .35rem;
+    color: #8a8278;
+}
+
+.letter-field .helptext {
+    display: block;
+    margin-top: .35rem;
+    color: #8a8278;
+    font-size: .8rem;
+    line-height: 1.45;
+}

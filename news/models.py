@@ -1,7 +1,15 @@
+import uuid
+from datetime import timedelta
+
+from django.conf import settings
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
+
+
+def default_invite_expiry():
+    return timezone.now() + timedelta(days=7)
 
 
 class Article(models.Model):
@@ -76,3 +84,42 @@ class EditorialLetter(models.Model):
     def __str__(self):
         sender = self.sender_name or "анонимно"
         return f"{sender}: {self.body[:60]}"
+
+
+class Invitation(models.Model):
+    token = models.UUIDField("токен", default=uuid.uuid4, unique=True, editable=False)
+    label = models.CharField("для кого", max_length=120, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name="создал",
+        related_name="created_invitations",
+        on_delete=models.SET_NULL,
+        null=True,
+    )
+    created_at = models.DateTimeField("создано", auto_now_add=True)
+    expires_at = models.DateTimeField("действует до", default=default_invite_expiry)
+    accepted_at = models.DateTimeField("принято", blank=True, null=True)
+    accepted_by = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        verbose_name="принял",
+        related_name="accepted_invitation",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+    )
+    revoked_at = models.DateTimeField("отозвано", blank=True, null=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "приглашение"
+        verbose_name_plural = "приглашения"
+
+    def __str__(self):
+        return self.label or str(self.token)
+
+    @property
+    def is_active(self):
+        return self.accepted_at is None and self.revoked_at is None and self.expires_at > timezone.now()
+
+    def get_absolute_url(self):
+        return reverse("invite-accept", kwargs={"token": self.token})

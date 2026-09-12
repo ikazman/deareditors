@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}Приглашение — Dear Editors{% endblock %}
+
+{% block content %}
+<section class="letter-page access-page">
+    <p class="rubric">По приглашению редакции</p>
+    {% if invite_invalid %}
+        <h1 class="letter-title">Приглашение больше не действует.</h1>
+        <p class="letter-note">Оно могло быть использовано, отозвано или просто пережить отведенные ему семь дней. Редакция рекомендует получить новое.</p>
+        <a class="more more--nav" href="{% url 'login' %}">К входу</a>
+    {% else %}
+        <h1 class="letter-title">Вас пригласили читать Dear Editors.</h1>
+        <p class="letter-note">{% if invitation.label %}Приглашение подготовлено для: {{ invitation.label }}.{% else %}Редакция не уточнила, для кого именно. Это, вероятно, не случайность.{% endif %}</p>
+
+        <form class="letter-form" method="post">
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="letter-errors">{{ form.non_field_errors }}</div>{% endif %}
+
+            <div class="letter-field">
+                <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+                {{ form.username }}
+                {{ form.username.errors }}
+            </div>
+            <div class="letter-field">
+                <label for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>
+                {{ form.first_name }}
+                {{ form.first_name.errors }}
+            </div>
+            <div class="letter-field">
+                <label for="{{ form.password1.id_for_label }}">{{ form.password1.label }}</label>
+                {{ form.password1 }}
+                {{ form.password1.errors }}
+            </div>
+            <div class="letter-field">
+                <label for="{{ form.password2.id_for_label }}">{{ form.password2.label }}</label>
+                {{ form.password2 }}
+                {{ form.password2.errors }}
+            </div>
+
+            <p class="letter-privacy">Ссылка одноразовая. После регистрации она перестанет открывать двери редакционного издания.</p>
+            <button class="letter-submit" type="submit">Принять приглашение</button>
+        </form>
+    {% endif %}
+</section>
+{% endblock %}
