@@ -1,0 +1,28 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Dear Editors — до дорогой редакции дошел слух.">
+    <title>{% block title %}Dear Editors{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'news/styles.css' %}">
+</head>
+<body>
+    <header class="wrap masthead">
+        <a class="nameplate" href="{% url 'article-list' %}">Dear Editors</a>
+        <div class="issue">Внутреннее издание · {% now "j E Y" %}</div>
+    </header>
+
+    <main class="wrap">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="wrap colophon">
+        Dear Editors — внутреннее издание. Слухи проверяются по мере возможности, опровергаются по мере необходимости. Письма в дорогую редакцию принимаются круглосуточно.
+    </footer>
+</body>
+</html>

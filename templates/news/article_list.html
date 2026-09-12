@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="hero">
+    <p class="rubric">Редакционная лента</p>
+    <h1>До дорогой редакции дошел слух.</h1>
+    <p class="hero-note">Мы, разумеется, ничего не утверждаем. Но некоторые вещи совершенно невозможно оставить без редакционного внимания.</p>
+    <hr class="hero-rule">
+</section>
+
+<section class="feed" aria-label="Публикации">
+    {% for article in articles %}
+        <article class="entry">
+            <div class="byline">
+                <span class="stamp">{{ article.published_at|date:"d.m.Y · H:i" }}</span>
+                <span class="desk">{{ article.author_name }}</span>
+            </div>
+            <h2><a href="{{ article.get_absolute_url }}">{{ article.title }}</a></h2>
+            {% if article.lead %}<p>{{ article.lead }}</p>{% endif %}
+            <a class="more" href="{{ article.get_absolute_url }}">Читать заметку</a>
+        </article>
+    {% empty %}
+        <div class="empty">
+            <p>До дорогой редакции пока ничего не дошло.</p>
+            <strong>Подозрительно. Будем наблюдать.</strong>
+        </div>
+    {% endfor %}
+</section>
+{% endblock %}
