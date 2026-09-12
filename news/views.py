@@ -1,13 +1,24 @@
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
-from django.db import transaction
+from django.db import DatabaseError, connection, transaction
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .forms import ArticleForm, EditorialLetterForm
 from .models import Article, EditorialLetter
+
+
+def health(request):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+    except DatabaseError:
+        return JsonResponse({"status": "error"}, status=503)
+    return JsonResponse({"status": "ok"})
 
 
 def article_list(request):

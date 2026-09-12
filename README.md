@@ -32,7 +32,8 @@ python manage.py runserver
 
 - `/` — редакционная лента;
 - `/editor/` — редакционный стол;
-- `/admin/` — запасной Django Admin.
+- `/admin/` — запасной Django Admin;
+- `/health/` — техническая проверка приложения и базы.
 
 ## Проверка
 
@@ -41,6 +42,10 @@ python manage.py check
 python manage.py makemigrations --check --dry-run
 python manage.py test
 ```
+
+## Деплой
+
+Подготовка и чек-лист для Amvera описаны в [DEPLOY_AMVERA.md](DEPLOY_AMVERA.md).
 
 ## Принципы
 
