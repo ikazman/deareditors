@@ -22,7 +22,7 @@
       "purpose": "any"
     },
     {
-      "src": "app-icon-maskable.svg",
+      "src": "icon-maskable.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"
