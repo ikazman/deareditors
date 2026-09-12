@@ -17,11 +17,11 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: "PT 
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--rubric); outline-offset: 3px; }
 
-.masthead { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem; padding-top: 1.4rem; padding-bottom: 1rem; border-bottom: 1px solid var(--ink); }
+.masthead { padding-top: 1.4rem; }
+.masthead__primary { display: flex; align-items: baseline; justify-content: space-between; gap: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--ink); }
 .nameplate { margin: 0; color: var(--ink); font-family: "Playfair Display", serif; font-weight: 900; font-size: clamp(1.9rem, 5.5vw, 2.9rem); line-height: .9; letter-spacing: -.015em; text-decoration: none; }
-.masthead__right { display: flex; flex-direction: column; align-items: flex-end; gap: .35rem; }
 .issue { color: var(--ink-soft); font-size: .7rem; letter-spacing: .14em; text-align: right; text-transform: uppercase; white-space: nowrap; }
-.service-nav { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: baseline; gap: .25rem .85rem; color: var(--ink-soft); font-size: .72rem; line-height: 1.3; }
+.service-nav { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: baseline; gap: .25rem .85rem; min-height: 1.65rem; padding-top: .38rem; color: var(--ink-soft); font-size: .68rem; line-height: 1.3; }
 .service-nav a { text-decoration-color: var(--rule); text-underline-offset: 2px; }
 .service-nav a:hover { color: var(--rubric); text-decoration-color: var(--rubric); }
 .service-nav form { margin: 0; }
@@ -78,13 +78,11 @@ a { color: inherit; }
 
 .colophon { padding-top: 0; padding-bottom: 3rem; color: var(--ink-soft); font-size: .78rem; line-height: 1.5; }
 .colophon__inner { width: min(100%, 32rem); margin-left: 0; padding-top: 1.15rem; border-top: 1px solid var(--ink); }
-.colophon-private { margin-top: .35rem; color: #8a8278; }
 
 @media (max-width: 34rem) {
-    .masthead { flex-direction: column; gap: .55rem; }
-    .masthead__right { align-items: flex-start; }
-    .issue { text-align: left; }
-    .service-nav { justify-content: flex-start; }
+    .masthead__primary { flex-direction: column; align-items: flex-start; gap: .35rem; }
+    .issue { text-align: left; white-space: normal; }
+    .service-nav { justify-content: flex-start; padding-top: .55rem; }
     .hero h1 { max-width: none; }
     .colophon__inner { width: 100%; }
 }
