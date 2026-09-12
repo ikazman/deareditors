@@ -1,13 +1,24 @@
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
-from .models import Article, EditorialLetter
+from .models import Article, EditorialLetter, Invitation
 
 
 class PublishingTests(TestCase):
+    def setUp(self):
+        self.reader = get_user_model().objects.create_user(username="reader", password="reader-secret-pass")
+
+    def test_publication_requires_login(self):
+        response = self.client.get(reverse("article-list"))
+        self.assertRedirects(response, f"{reverse('login')}?next={reverse('article-list')}")
+
     def test_draft_is_not_visible_in_feed(self):
         Article.objects.create(title="Секретный черновик", body="Пока никому.")
+        self.client.force_login(self.reader)
         response = self.client.get(reverse("article-list"))
         self.assertNotContains(response, "Секретный черновик")
 
@@ -18,6 +29,7 @@ class PublishingTests(TestCase):
             body="Редакция проверяет сведения.",
             status=Article.Status.PUBLISHED,
         )
+        self.client.force_login(self.reader)
         response = self.client.get(reverse("article-list"))
         self.assertContains(response, article.title)
         detail = self.client.get(article.get_absolute_url())
@@ -38,7 +50,7 @@ class PublishingTests(TestCase):
             ),
             status=Article.Status.PUBLISHED,
         )
-
+        self.client.force_login(self.reader)
         html = self.client.get(article.get_absolute_url()).content.decode()
         self.assertIn("<strong>Жирный</strong>", html)
         self.assertIn("<em>курсив</em>", html)
@@ -69,11 +81,19 @@ class PublishingTests(TestCase):
 
 class EditorialDeskTests(TestCase):
     def setUp(self):
-        self.user = get_user_model().objects.create_user(username="editor", password="secret-pass")
+        self.user = get_user_model().objects.create_user(
+            username="editor", password="secret-pass", is_staff=True
+        )
 
     def test_dashboard_requires_login(self):
         response = self.client.get(reverse("editor-dashboard"))
-        self.assertRedirects(response, f"{reverse('editor-login')}?next={reverse('editor-dashboard')}")
+        self.assertRedirects(response, f"{reverse('login')}?next={reverse('editor-dashboard')}")
+
+    def test_reader_cannot_open_editorial_desk(self):
+        reader = get_user_model().objects.create_user(username="reader2", password="secret-pass")
+        self.client.force_login(reader)
+        response = self.client.get(reverse("editor-dashboard"))
+        self.assertRedirects(response, reverse("article-list"))
 
     def test_editor_can_create_draft(self):
         self.client.force_login(self.user)
@@ -99,7 +119,7 @@ class EditorialDeskTests(TestCase):
             reverse("editor-article-create"),
             {
                 "title": "Редакция публикует материал",
-                "lead": "Теперь это публично.",
+                "lead": "Теперь это внутри издания.",
                 "body": "До дорогой редакции дошел слух.",
                 "author_name": "Отдел наблюдений",
                 "action": "publish",
@@ -154,9 +174,12 @@ class EditorialDeskTests(TestCase):
 
 class EditorialInboxTests(TestCase):
     def setUp(self):
-        self.user = get_user_model().objects.create_user(username="editor", password="secret-pass")
+        self.user = get_user_model().objects.create_user(
+            username="editor", password="secret-pass", is_staff=True
+        )
 
-    def test_public_can_send_anonymous_letter(self):
+    def test_reader_can_send_anonymous_letter(self):
+        self.client.force_login(self.user)
         response = self.client.post(
             reverse("letter-create"),
             {"body": "В переговорной происходит что-то подозрительное.", "sender_name": "", "contact": ""},
@@ -169,7 +192,7 @@ class EditorialInboxTests(TestCase):
 
     def test_inbox_requires_login(self):
         response = self.client.get(reverse("editor-inbox"))
-        self.assertRedirects(response, f"{reverse('editor-login')}?next={reverse('editor-inbox')}")
+        self.assertRedirects(response, f"{reverse('login')}?next={reverse('editor-inbox')}")
 
     def test_editor_can_mark_letter_reviewed(self):
         letter = EditorialLetter.objects.create(body="Проверить календарь.")
@@ -186,18 +209,79 @@ class EditorialInboxTests(TestCase):
             contact="source@example.test",
         )
         self.client.force_login(self.user)
-
         first = self.client.post(reverse("editor-letter-convert", args=[letter.pk]))
         letter.refresh_from_db()
         article = letter.converted_article
-
         self.assertRedirects(first, reverse("editor-article-edit", args=[article.pk]))
         self.assertEqual(article.status, Article.Status.DRAFT)
         self.assertEqual(article.body, letter.body)
         self.assertEqual(article.author_name, "Дорогая редакция")
         self.assertNotIn(letter.sender_name, article.body)
         self.assertNotIn(letter.contact, article.body)
-
         second = self.client.post(reverse("editor-letter-convert", args=[letter.pk]))
         self.assertRedirects(second, reverse("editor-article-edit", args=[article.pk]))
         self.assertEqual(Article.objects.count(), 1)
+
+
+class InvitationTests(TestCase):
+    def setUp(self):
+        self.editor = get_user_model().objects.create_user(
+            username="chief", password="secret-pass", is_staff=True
+        )
+
+    def test_editor_can_create_invitation(self):
+        self.client.force_login(self.editor)
+        response = self.client.post(reverse("editor-invitations"), {"label": "Свидетель"})
+        self.assertRedirects(response, reverse("editor-invitations"))
+        invitation = Invitation.objects.get()
+        self.assertEqual(invitation.label, "Свидетель")
+        self.assertEqual(invitation.created_by, self.editor)
+        self.assertTrue(invitation.is_active)
+
+    def test_invitation_creates_reader_and_logs_them_in(self):
+        invitation = Invitation.objects.create(label="Новый читатель", created_by=self.editor)
+        response = self.client.post(
+            invitation.get_absolute_url(),
+            {
+                "username": "new-reader",
+                "first_name": "Ирина",
+                "password1": "NorthernGazette!926",
+                "password2": "NorthernGazette!926",
+            },
+        )
+        self.assertRedirects(response, reverse("article-list"))
+        invitation.refresh_from_db()
+        user = get_user_model().objects.get(username="new-reader")
+        self.assertFalse(user.is_staff)
+        self.assertEqual(user.first_name, "Ирина")
+        self.assertEqual(invitation.accepted_by, user)
+        self.assertIsNotNone(invitation.accepted_at)
+        self.assertFalse(invitation.is_active)
+        self.assertEqual(int(self.client.session["_auth_user_id"]), user.pk)
+
+    def test_used_invitation_cannot_be_used_again(self):
+        user = get_user_model().objects.create_user(username="used-reader", password="secret-pass")
+        invitation = Invitation.objects.create(
+            created_by=self.editor,
+            accepted_at=timezone.now(),
+            accepted_by=user,
+        )
+        response = self.client.get(invitation.get_absolute_url())
+        self.assertEqual(response.status_code, 410)
+
+    def test_expired_invitation_is_gone(self):
+        invitation = Invitation.objects.create(
+            created_by=self.editor,
+            expires_at=timezone.now() - timedelta(minutes=1),
+        )
+        response = self.client.get(invitation.get_absolute_url())
+        self.assertEqual(response.status_code, 410)
+
+    def test_editor_can_revoke_invitation(self):
+        invitation = Invitation.objects.create(created_by=self.editor)
+        self.client.force_login(self.editor)
+        response = self.client.post(reverse("editor-invitation-revoke", args=[invitation.pk]))
+        self.assertRedirects(response, reverse("editor-invitations"))
+        invitation.refresh_from_db()
+        self.assertIsNotNone(invitation.revoked_at)
+        self.assertFalse(invitation.is_active)
