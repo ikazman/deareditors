@@ -9,7 +9,9 @@ On every start the container:
 1. mounts persistent storage at `/data`;
 2. runs Django migrations;
 3. collects static files;
-4. starts Gunicorn on `0.0.0.0:$PORT`.
+4. starts the ASGI application with Uvicorn on `0.0.0.0:$PORT`.
+
+The ASGI application serves both the closed Dear Editors site and the authenticated editorial MCP endpoint.
 
 In production the SQLite database lives at `/data/db.sqlite3`, so application rebuilds do not replace it.
 
@@ -37,7 +39,7 @@ DJANGO_SECRET_KEY=<long-random-secret>
 DJANGO_ALLOWED_HOSTS=<your-amvera-hostname>
 ```
 
-Generate a secret locally with:
+Generate a Django secret locally with:
 
 ```bash
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
@@ -49,11 +51,29 @@ For several hostnames, use a comma-separated value:
 DJANGO_ALLOWED_HOSTS=project.example.amvera.io,deareditors.example.com
 ```
 
-If a custom domain is added, it is useful to add its HTTPS origin as well:
+If a custom domain is added, add its HTTPS origin as well:
 
 ```text
 DJANGO_CSRF_TRUSTED_ORIGINS=https://deareditors.example.com
 ```
+
+## Editorial MCP
+
+The newspaper can run without MCP. In that case `/mcp/` returns `503` and the rest of the application is unaffected.
+
+To enable the Perplexity connector, generate a separate editorial key:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+and add it to Amvera:
+
+```text
+DEAR_EDITORS_MCP_API_KEY=<generated-secret>
+```
+
+The setup steps for Perplexity and the exact MCP tool boundary are documented in [MCP_PERPLEXITY.md](MCP_PERPLEXITY.md).
 
 ## HTTPS
 
@@ -73,12 +93,10 @@ The production defaults should be enough for Dear Editors. These variables exist
 
 ```text
 DJANGO_DB_PATH=/data/db.sqlite3
-GUNICORN_WORKERS=1
-GUNICORN_THREADS=4
-GUNICORN_TIMEOUT=60
+DEAR_EDITORS_MCP_ALLOWED_ORIGINS=https://www.perplexity.ai,https://perplexity.ai
 ```
 
-With SQLite, one Gunicorn worker is the deliberate default. Dear Editors does not need multiple worker processes at its expected load, and this keeps writes predictable.
+The container intentionally runs one Uvicorn worker. With SQLite and the expected load of Dear Editors, one process keeps writes predictable and is more than sufficient.
 
 ## First launch check
 
@@ -98,14 +116,23 @@ The endpoint checks that Django can talk to the database, not merely that the we
 
 Then verify:
 
-- the front page loads over HTTPS;
+- `/login/` opens over HTTPS;
+- an anonymous request to `/` redirects to login;
 - CSS and fonts are present;
-- `/editor/login/` opens;
-- login works;
+- the editor account can open `/editor/`;
+- an invitation can be created and accepted by a new reader;
 - an article can be created and survives an application restart.
 
 The last check confirms that `/data` persistence is working.
 
+If MCP is enabled, also connect Perplexity to:
+
+```text
+https://<your-host>/mcp/
+```
+
+using Streamable HTTP and the API key configured above.
+
 ## Domain
 
-A custom domain is not required for the first launch. It is safer to deploy first on the Amvera-provided hostname, confirm persistence and authentication, and attach the final domain afterwards.
+A custom domain is not required for the first launch. It is safer to deploy first on the Amvera-provided hostname, confirm persistence, authentication and MCP connectivity, and attach the final domain afterwards.
