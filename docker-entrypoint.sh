@@ -4,6 +4,7 @@ set -eu
 mkdir -p /data
 
 python manage.py migrate --noinput
+python manage.py bootstrap_editor
 python manage.py collectstatic --noinput
 
 exec uvicorn deareditors.asgi:application \
