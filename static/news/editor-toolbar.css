@@ -1,0 +1,27 @@
+.editor-toolbar{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:.15rem;
+  margin:.1rem 0 .35rem;
+  padding:.2rem 0 .35rem;
+  border-bottom:1px solid var(--rule);
+}
+
+.editor-tool{
+  min-width:2rem;
+  padding:.2rem .35rem;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  color:var(--ink-soft);
+  font:inherit;
+  font-size:.82rem;
+  line-height:1.2;
+  cursor:pointer;
+}
+
+.editor-tool--wide{padding-left:.55rem;padding-right:.55rem}
+.editor-tool:hover{color:var(--ink);background:var(--paper-sunk)}
+.editor-tool:focus-visible{outline:1px solid var(--rubric);outline-offset:1px;color:var(--ink)}
+.editor-toolbar__rule{width:1px;height:1.1rem;margin:0 .3rem;background:var(--rule)}
