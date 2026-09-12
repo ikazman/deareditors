@@ -41,8 +41,17 @@
 
     <div class="field">
         <label class="field__label" for="{{ form.body.id_for_label }}">Текст</label>
+        <div class="editor-toolbar" role="toolbar" aria-label="Форматирование текста">
+            <button class="editor-tool" type="button" data-md-command="bold" aria-label="Жирный" title="Жирный (Ctrl+B)"><strong>B</strong></button>
+            <button class="editor-tool" type="button" data-md-command="italic" aria-label="Курсив" title="Курсив (Ctrl+I)"><em>I</em></button>
+            <span class="editor-toolbar__rule" aria-hidden="true"></span>
+            <button class="editor-tool editor-tool--wide" type="button" data-md-command="bullet" aria-label="Маркированный список" title="Маркированный список">• список</button>
+            <button class="editor-tool editor-tool--wide" type="button" data-md-command="numbered" aria-label="Нумерованный список" title="Нумерованный список">1. список</button>
+            <span class="editor-toolbar__rule" aria-hidden="true"></span>
+            <button class="editor-tool editor-tool--wide" type="button" data-md-command="link" aria-label="Ссылка" title="Ссылка (Ctrl+K)">Ссылка</button>
+        </div>
         {{ form.body }}
-        <span class="field__hint">Финальное «Будем наблюдать.» издание добавит само.</span>
+        <span class="field__hint">Жирный, курсив, списки и ссылки. Финальное «Будем наблюдать.» издание добавит само.</span>
         {{ form.body.errors }}
     </div>
 

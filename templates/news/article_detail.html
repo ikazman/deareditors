@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load editorial_markdown %}
 
 {% block title %}{{ article.title }} — Dear Editors{% endblock %}
 
@@ -17,7 +18,7 @@
 
     <hr class="article__rule">
 
-    <div class="article__body">{{ article.body|linebreaks }}</div>
+    <div class="article__body">{{ article.body|editorial_markdown }}</div>
     <p class="article__signoff">Будем наблюдать.</p>
 </article>
 {% endblock %}
