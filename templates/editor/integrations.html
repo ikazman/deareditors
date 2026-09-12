@@ -1,0 +1,70 @@
+{% extends 'editor/base.html' %}
+
+{% block title %}Интеграции — Dear Editors{% endblock %}
+{% block main_class %}wrap--read{% endblock %}
+
+{% block content %}
+<a class="backlink" href="{% url 'editor-dashboard' %}">К материалам</a>
+
+<div class="page-head">
+    <div>
+        <p class="rubric">Служебный доступ</p>
+        <h1 class="page-title">Интеграции</h1>
+    </div>
+</div>
+
+<section class="integration-intro">
+    <p>Ключи дают внешнему редакционному помощнику доступ только к MCP Dear Editors: чтению материалов и почты, а также работе с черновиками. Публикация и управление доступом через MCP недоступны.</p>
+</section>
+
+{% if raw_key %}
+<section class="secret-card" aria-label="Новый ключ MCP">
+    <p class="rubric">Новый ключ</p>
+    <h2>Скопируйте сейчас</h2>
+    <p>После ухода с этой страницы редакция больше не сможет показать полный ключ.</p>
+    <label class="field__label" for="new-mcp-key">Ключ API</label>
+    <input id="new-mcp-key" class="input secret-value" type="text" value="{{ raw_key }}" readonly onclick="this.select()">
+</section>
+{% endif %}
+
+<form class="invite-form" method="post">
+    {% csrf_token %}
+    <div class="field">
+        <label class="field__label" for="{{ form.label.id_for_label }}">Название ключа</label>
+        {{ form.label }}
+        <span class="field__hint">Например, Perplexity. Название видно только редакции.</span>
+        {{ form.label.errors }}
+    </div>
+    <button class="btn" type="submit">Выпустить новый ключ</button>
+</form>
+
+<section class="invite-list" aria-label="Ключи MCP">
+    {% for key in keys %}
+        <article class="invite-row">
+            <div class="invite-row__meta">
+                {% if key.is_active %}
+                    <span class="status status--draft">Действует</span>
+                {% else %}
+                    <span class="status">Отозван</span>
+                {% endif %}
+                <span class="stamp">{{ key.created_at|date:"d.m.Y · H:i" }}</span>
+                <span class="desk">{{ key.label }}</span>
+            </div>
+            <p class="invite-row__note"><code>{{ key.masked }}</code></p>
+            {% if key.last_used_at %}
+                <p class="field__hint">Последнее использование: {{ key.last_used_at|date:"d.m.Y · H:i" }}</p>
+            {% else %}
+                <p class="field__hint">Еще не использовался.</p>
+            {% endif %}
+            {% if key.is_active %}
+                <form class="invite-revoke" method="post" action="{% url 'editor-mcp-key-revoke' key.pk %}">
+                    {% csrf_token %}
+                    <button class="btn btn--danger" type="submit">Отозвать ключ</button>
+                </form>
+            {% endif %}
+        </article>
+    {% empty %}
+        <p class="empty">У редакции пока нет внешних помощников. Возможно, это временно.</p>
+    {% endfor %}
+</section>
+{% endblock %}
