@@ -4,6 +4,8 @@
     --ink-soft: #575049;
     --rubric: #8e3517;
     --rule: #c9c2b4;
+    --page: 66rem;
+    --read: 40rem;
     --measure: 34rem;
     --gutter: clamp(1.25rem, 4vw, 3.5rem);
 }
@@ -23,7 +25,7 @@ body {
 }
 
 .wrap {
-    max-width: 66rem;
+    max-width: var(--page);
     margin: 0 auto;
     padding: 0 var(--gutter);
 }
@@ -172,7 +174,7 @@ a { color: inherit; }
 }
 
 .article {
-    max-width: 40rem;
+    max-width: var(--read);
     padding: clamp(2.25rem, 5vw, 3.25rem) 0 4.5rem;
 }
 
@@ -213,7 +215,7 @@ a { color: inherit; }
 }
 
 .article__lead {
-    max-width: 32rem;
+    max-width: var(--read);
     margin: 1rem 0 0;
     color: var(--ink-soft);
     font-size: 1.1rem;
@@ -229,7 +231,7 @@ a { color: inherit; }
 }
 
 .article__body p {
-    max-width: 40rem;
+    max-width: var(--read);
     margin: 0 0 1.1rem;
     text-wrap: pretty;
 }
@@ -242,7 +244,7 @@ a { color: inherit; }
 }
 
 .colophon {
-    max-width: 66rem;
+    max-width: var(--page);
     padding-top: 1.25rem;
     padding-bottom: 3rem;
     border-top: 1px solid var(--ink);
