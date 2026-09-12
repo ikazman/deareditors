@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .auth import editor_required
+from .editorial_service import create_or_update_draft_from_letter
 from .forms import ArticleForm, EditorialLetterForm, InvitationAcceptForm, InvitationForm
 from .models import Article, EditorialLetter, Invitation
 
@@ -155,22 +156,11 @@ def editor_letter_review(request, pk):
 @editor_required
 @require_POST
 def editor_letter_convert(request, pk):
-    with transaction.atomic():
-        letter = get_object_or_404(EditorialLetter.objects.select_for_update(), pk=pk)
-
-        if letter.converted_article_id:
-            article = letter.converted_article
-        else:
-            article = Article.objects.create(
-                title="До редакции дошел новый слух",
-                body=letter.body,
-                author_name="Дорогая редакция",
-                status=Article.Status.DRAFT,
-            )
-            letter.status = EditorialLetter.Status.REVIEWED
-            letter.reviewed_at = timezone.now()
-            letter.converted_article = article
-            letter.save(update_fields=["status", "reviewed_at", "converted_article"])
+    letter = get_object_or_404(EditorialLetter.objects.select_related("converted_article"), pk=pk)
+    if letter.converted_article_id:
+        article = letter.converted_article
+    else:
+        article = create_or_update_draft_from_letter(letter)
 
     messages.success(request, "Письмо превращено в черновик. Осталось сделать из слуха журналистику.")
     return redirect("editor-article-edit", pk=article.pk)

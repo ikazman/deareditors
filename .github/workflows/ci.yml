@@ -19,5 +19,7 @@ jobs:
       - run: python manage.py test
       - name: Check production settings
         run: DJANGO_DEBUG=0 DJANGO_SECRET_KEY=ci-only-secret-key DJANGO_ALLOWED_HOSTS=example.com python manage.py check
+      - name: Check production ASGI and MCP boot
+        run: DJANGO_DEBUG=0 DJANGO_SECRET_KEY=ci-only-secret-key DJANGO_ALLOWED_HOSTS=example.com DEAR_EDITORS_MCP_API_KEY=ci-mcp-key python -c "import deareditors.asgi; print('ASGI + MCP OK')"
       - name: Build production image
         run: docker build -t deareditors:ci .

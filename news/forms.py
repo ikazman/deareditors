@@ -2,10 +2,8 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 
+from .editorial_service import normalize_article_body
 from .models import Article, EditorialLetter, Invitation
-
-
-SIGNOFF = "Будем наблюдать."
 
 
 class ReaderAuthenticationForm(AuthenticationForm):
@@ -124,15 +122,7 @@ class ArticleForm(forms.ModelForm):
         }
 
     def clean_body(self):
-        body = self.cleaned_data["body"].rstrip()
-        lines = body.splitlines()
-        while lines and not lines[-1].strip():
-            lines.pop()
-        if lines and lines[-1].strip().casefold() == SIGNOFF.casefold():
-            lines.pop()
-            while lines and not lines[-1].strip():
-                lines.pop()
-        return "\n".join(lines).rstrip()
+        return normalize_article_body(self.cleaned_data["body"])
 
 
 class EditorialLetterForm(forms.ModelForm):
