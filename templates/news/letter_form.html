@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}Письмо в дорогую редакцию — Dear Editors{% endblock %}
+
+{% block content %}
+<section class="letter-page">
+    <a class="article-back" href="{% url 'article-list' %}">К редакционной ленте</a>
+    <p class="rubric">Почта редакции</p>
+    <h1 class="letter-title">Сообщить дорогой редакции</h1>
+    <p class="letter-note">Мы, разумеется, ничего не обещаем. Но внимательно прочитаем все, что дошло до редакции.</p>
+
+    <form method="post" class="letter-form">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="letter-errors">{{ form.non_field_errors }}</div>{% endif %}
+
+        <div class="letter-field">
+            <label for="{{ form.body.id_for_label }}">Что произошло</label>
+            {{ form.body }}
+            {{ form.body.errors }}
+            <span class="letter-hint">Факты приветствуются. Доказательства — особенно.</span>
+        </div>
+
+        <div class="letter-field">
+            <label for="{{ form.sender_name.id_for_label }}">Как к вам обращаться</label>
+            {{ form.sender_name }}
+            {{ form.sender_name.errors }}
+        </div>
+
+        <div class="letter-field">
+            <label for="{{ form.contact.id_for_label }}">Как с вами связаться</label>
+            {{ form.contact }}
+            {{ form.contact.errors }}
+        </div>
+
+        <p class="letter-privacy">Имя и контакт необязательны. В публикацию они автоматически не попадут.</p>
+        <button class="letter-submit" type="submit">Отправить слух</button>
+    </form>
+</section>
+{% endblock %}

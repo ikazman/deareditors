@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Article
+from .models import Article, EditorialLetter
 
 
 SIGNOFF = "Будем наблюдать."
@@ -51,3 +51,31 @@ class ArticleForm(forms.ModelForm):
             while lines and not lines[-1].strip():
                 lines.pop()
         return "\n".join(lines).rstrip()
+
+
+class EditorialLetterForm(forms.ModelForm):
+    class Meta:
+        model = EditorialLetter
+        fields = ("body", "sender_name", "contact")
+        widgets = {
+            "body": forms.Textarea(
+                attrs={
+                    "class": "letter-textarea",
+                    "rows": 7,
+                    "placeholder": "До дорогой редакции дошел слух, что…",
+                    "autofocus": True,
+                }
+            ),
+            "sender_name": forms.TextInput(
+                attrs={
+                    "class": "letter-input",
+                    "placeholder": "Можно не представляться",
+                }
+            ),
+            "contact": forms.TextInput(
+                attrs={
+                    "class": "letter-input",
+                    "placeholder": "Почта, Telegram или иной способ — если хотите ответа",
+                }
+            ),
+        }

@@ -46,3 +46,33 @@ class Article(models.Model):
 
     def get_absolute_url(self):
         return reverse("article-detail", kwargs={"slug": self.slug})
+
+
+class EditorialLetter(models.Model):
+    class Status(models.TextChoices):
+        NEW = "new", "Новое"
+        REVIEWED = "reviewed", "Просмотрено"
+
+    body = models.TextField("сообщение")
+    sender_name = models.CharField("имя", max_length=120, blank=True)
+    contact = models.CharField("контакт", max_length=240, blank=True)
+    status = models.CharField("статус", max_length=12, choices=Status.choices, default=Status.NEW)
+    created_at = models.DateTimeField("получено", auto_now_add=True)
+    reviewed_at = models.DateTimeField("просмотрено", blank=True, null=True)
+    converted_article = models.OneToOneField(
+        Article,
+        verbose_name="созданный черновик",
+        related_name="source_letter",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "письмо в редакцию"
+        verbose_name_plural = "письма в редакцию"
+
+    def __str__(self):
+        sender = self.sender_name or "анонимно"
+        return f"{sender}: {self.body[:60]}"

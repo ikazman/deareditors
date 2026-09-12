@@ -22,7 +22,10 @@
     </main>
 
     <footer class="wrap colophon">
-        Dear Editors — внутреннее издание. Слухи проверяются по мере возможности, опровергаются по мере необходимости. Письма в дорогую редакцию принимаются круглосуточно.
+        <div class="colophon__inner">
+            <div>Dear Editors — внутреннее издание. Слухи проверяются по мере возможности, опровергаются по мере необходимости.</div>
+            <a class="colophon-link colophon-link--primary" href="{% url 'letter-create' %}">Письма в дорогую редакцию принимаются круглосуточно.</a>
+        </div>
     </footer>
 </body>
 </html>

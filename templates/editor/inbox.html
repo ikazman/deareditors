@@ -1,0 +1,57 @@
+{% extends 'editor/base.html' %}
+
+{% block title %}Почта редакции — Dear Editors{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <p class="rubric">Редакция</p>
+        <h1 class="page-title">Почта редакции</h1>
+    </div>
+    <a class="btn btn--quiet" href="{% url 'editor-dashboard' %}">К материалам</a>
+</div>
+
+<ul class="mail-list">
+    {% for letter in letters %}
+        <li class="mail-row">
+            <div class="mail-row__meta">
+                {% if letter.status == 'new' %}
+                    <span class="status status--draft">Новое</span>
+                {% else %}
+                    <span class="status">Просмотрено</span>
+                {% endif %}
+                <span class="stamp">{{ letter.created_at|date:"d.m.Y · H:i" }}</span>
+                <span class="desk">{{ letter.sender_name|default:"Анонимно" }}</span>
+            </div>
+
+            <div class="mail-row__body">{{ letter.body|linebreaks }}</div>
+
+            {% if letter.contact %}
+                <p class="mail-row__contact"><span>Контакт:</span> {{ letter.contact }}</p>
+            {% endif %}
+
+            <div class="mail-row__actions">
+                {% if letter.converted_article %}
+                    <a class="btn btn--quiet" href="{% url 'editor-article-edit' letter.converted_article.pk %}">Открыть черновик</a>
+                {% else %}
+                    <form method="post" action="{% url 'editor-letter-convert' letter.pk %}">
+                        {% csrf_token %}
+                        <button class="btn" type="submit">Сделать заметкой</button>
+                    </form>
+                    {% if letter.status == 'new' %}
+                        <form method="post" action="{% url 'editor-letter-review' letter.pk %}">
+                            {% csrf_token %}
+                            <button class="btn btn--quiet" type="submit">Отметить просмотренным</button>
+                        </form>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </li>
+    {% empty %}
+        <li class="empty">
+            <strong>Почта редакции пуста.</strong>
+            <p>Либо все спокойно, либо нам просто ничего не рассказывают.</p>
+        </li>
+    {% endfor %}
+</ul>
+{% endblock %}

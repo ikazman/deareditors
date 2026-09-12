@@ -5,6 +5,7 @@
     <p class="rubric">Редакционная лента</p>
     <h1>До дорогой редакции дошел слух.</h1>
     <p class="hero-note">Мы, разумеется, ничего не утверждаем. Но некоторые вещи совершенно невозможно оставить без редакционного внимания.</p>
+    <a class="more more--primary" href="{% url 'letter-create' %}">Рассказать редакции слух</a>
     <hr class="hero-rule">
 </section>
 
@@ -17,7 +18,7 @@
             </div>
             <h2><a href="{{ article.get_absolute_url }}">{{ article.title }}</a></h2>
             {% if article.lead %}<p>{{ article.lead }}</p>{% endif %}
-            <a class="more" href="{{ article.get_absolute_url }}">Читать заметку</a>
+            <a class="more more--nav" href="{{ article.get_absolute_url }}">Читать заметку</a>
         </article>
     {% empty %}
         <div class="empty">
