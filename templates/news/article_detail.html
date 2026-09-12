@@ -8,7 +8,7 @@
     <a class="article-back" href="{% url 'article-list' %}">К редакционной ленте</a>
 
     <div class="article__byline">
-        <span class="stamp">{{ article.published_at|date:"d.m.Y · H:i" }}</span>
+        <span class="stamp">{{ article.published_at|date:"d.m.Y" }}</span>
         <span class="desk">{{ article.author_name }}</span>
     </div>
 
