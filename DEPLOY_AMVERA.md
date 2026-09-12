@@ -68,19 +68,15 @@ DJANGO_CSRF_TRUSTED_ORIGINS=https://deareditors.example.com
 
 ## Editorial MCP
 
-The newspaper can run without MCP. In that case `/mcp/` returns `503` and the rest of the application is unaffected.
-
-To enable the Perplexity connector, generate a separate editorial key:
-
-```bash
-python -c "import secrets; print(secrets.token_urlsafe(48))"
-```
-
-and add it to Amvera:
+No MCP secret is stored in Amvera configuration. After the site is running, log in as an editor and open:
 
 ```text
-DEAR_EDITORS_MCP_API_KEY=<generated-secret>
+/editor/integrations/
 ```
+
+Create a key with a label such as `Perplexity`. The full key is shown once; copy it directly into the connector configuration. Dear Editors stores only a SHA-256 digest and a non-secret prefix for identification.
+
+Several active keys can coexist. For zero-downtime rotation, issue a new key, update the connector, verify it works, then revoke the old key from the same page.
 
 The setup steps for Perplexity and the exact MCP tool boundary are documented in [MCP_PERPLEXITY.md](MCP_PERPLEXITY.md).
 
@@ -131,17 +127,18 @@ Then verify:
 - the bootstrap editor can log in and open `/editor/`;
 - an invitation can be created and accepted by a new reader;
 - an article can be created and survives an application restart;
+- `/editor/integrations/` can issue an MCP key;
 - after that verification, remove `DEAR_EDITORS_ADMIN_PASSWORD` from Amvera.
 
 The restart check confirms that `/data` persistence is working.
 
-If MCP is enabled, also connect Perplexity to:
+To connect Perplexity, use:
 
 ```text
 https://<your-host>/mcp/
 ```
 
-using Streamable HTTP and the API key configured above.
+with Streamable HTTP and a key issued by `/editor/integrations/`.
 
 ## Domain
 
