@@ -1,0 +1,26 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="DearEditors — до дорогой редакции дошёл слух.">
+    <title>{% block title %}DearEditors{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'news/styles.css' %}">
+</head>
+<body>
+    <header class="masthead">
+        <div class="shell masthead__inner">
+            <a class="brand" href="{% url 'article-list' %}">DearEditors</a>
+            <span class="tagline">До нас дошёл слух</span>
+        </div>
+    </header>
+    <main class="shell">
+        {% block content %}{% endblock %}
+    </main>
+    <footer class="shell footer">
+        <span>Дорогая редакция</span>
+        <span>Будем наблюдать.</span>
+    </footer>
+</body>
+</html>
