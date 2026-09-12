@@ -154,10 +154,11 @@ def editor_integrations(request):
         form = MCPKeyForm()
 
     keys = MCPAccessKey.objects.select_related("created_by")
+    mcp_url = request.build_absolute_uri("/mcp/")
     return render(
         request,
         "editor/integrations.html",
-        {"form": form, "keys": keys, "raw_key": raw_key},
+        {"form": form, "keys": keys, "raw_key": raw_key, "mcp_url": mcp_url},
     )
 
 
