@@ -3,15 +3,21 @@
 {% block title %}{{ article.title }} — Dear Editors{% endblock %}
 
 {% block content %}
-<article class="story">
-    <a class="back" href="{% url 'article-list' %}">← К редакционной ленте</a>
-    <div class="byline">
+<article class="article">
+    <a class="article-back" href="{% url 'article-list' %}">К редакционной ленте</a>
+
+    <div class="article__byline">
         <span class="stamp">{{ article.published_at|date:"d.m.Y · H:i" }}</span>
         <span class="desk">{{ article.author_name }}</span>
     </div>
-    <h1>{{ article.title }}</h1>
-    {% if article.lead %}<p class="story-lead">{{ article.lead }}</p>{% endif %}
-    <div class="story-body">{{ article.body|linebreaks }}</div>
-    <p class="observe">Будем наблюдать.</p>
+
+    <h1 class="article__title">{{ article.title }}</h1>
+
+    {% if article.lead %}<p class="article__lead">{{ article.lead }}</p>{% endif %}
+
+    <hr class="article__rule">
+
+    <div class="article__body">{{ article.body|linebreaks }}</div>
+    <p class="article__signoff">Будем наблюдать.</p>
 </article>
 {% endblock %}

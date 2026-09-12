@@ -4,6 +4,8 @@
     --ink-soft: #575049;
     --rubric: #8e3517;
     --rule: #c9c2b4;
+    --page: 66rem;
+    --read: 40rem;
     --measure: 34rem;
     --gutter: clamp(1.25rem, 4vw, 3.5rem);
 }
@@ -23,7 +25,7 @@ body {
 }
 
 .wrap {
-    max-width: 66rem;
+    max-width: var(--page);
     margin: 0 auto;
     padding: 0 var(--gutter);
 }
@@ -153,19 +155,15 @@ a { color: inherit; }
     color: var(--ink-soft);
 }
 
-.more,
-.back {
-    display: inline-block;
-    color: var(--rubric);
-    text-decoration: none;
-}
-
 .more {
+    display: inline-block;
     margin-top: .7rem;
     padding-bottom: 1px;
     border-bottom: 1px solid currentColor;
+    color: var(--rubric);
     font-size: .8rem;
     letter-spacing: .03em;
+    text-decoration: none;
 }
 
 .more:hover { border-bottom-color: transparent; }
@@ -175,54 +173,78 @@ a { color: inherit; }
     color: var(--ink-soft);
 }
 
-.story {
-    max-width: 48rem;
-    padding: clamp(2.25rem, 5vw, 3.25rem) 0 5rem;
+.article {
+    max-width: var(--read);
+    padding: clamp(2.25rem, 5vw, 3.25rem) 0 4.5rem;
 }
 
-.back {
-    margin-bottom: 2rem;
-    font-size: .8rem;
-    border-bottom: 1px solid currentColor;
+.article-back {
+    display: inline-block;
+    margin-bottom: 1.9rem;
+    padding-bottom: 1px;
+    border-bottom: 1px solid var(--rule);
+    color: var(--ink-soft);
+    font-size: .78rem;
+    text-decoration: none;
 }
 
-.story h1 {
-    max-width: 14ch;
+.article-back:hover {
+    color: var(--ink);
+    border-bottom-color: var(--ink);
+}
+
+.article__byline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+    margin: 0 0 .7rem;
+    font-size: .7rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+
+.article__title {
+    max-width: 20ch;
     margin: 0;
     font-family: "Playfair Display", serif;
     font-weight: 900;
-    font-size: clamp(2.6rem, 7vw, 5.5rem);
-    line-height: .95;
+    font-size: clamp(2.2rem, 6.2vw, 3.9rem);
+    line-height: .97;
     letter-spacing: -.02em;
+    text-wrap: balance;
 }
 
-.story-lead {
-    max-width: var(--measure);
-    margin: 1.25rem 0 0;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--ink);
+.article__lead {
+    max-width: var(--read);
+    margin: 1rem 0 0;
     color: var(--ink-soft);
-    font-size: 1.15rem;
+    font-size: 1.1rem;
     line-height: 1.5;
+    text-wrap: pretty;
 }
 
-.story-body {
-    max-width: var(--measure);
-    margin-top: 2rem;
+.article__rule {
+    max-width: 12rem;
+    margin: 1.6rem 0;
+    border: 0;
+    border-top: 1px solid var(--rule);
 }
 
-.story-body p { margin: 0 0 1.35em; }
+.article__body p {
+    max-width: var(--read);
+    margin: 0 0 1.1rem;
+    text-wrap: pretty;
+}
 
-.observe {
-    margin: 2.75rem 0 0;
+.article__signoff {
+    margin: 1.9rem 0 0;
     font-family: "Playfair Display", serif;
-    font-size: 1.35rem;
     font-style: italic;
     font-weight: 700;
 }
 
 .colophon {
-    max-width: 66rem;
+    max-width: var(--page);
     padding-top: 1.25rem;
     padding-bottom: 3rem;
     border-top: 1px solid var(--ink);

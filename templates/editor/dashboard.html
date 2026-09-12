@@ -1,0 +1,41 @@
+{% extends 'editor/base.html' %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <p class="rubric">Редакция</p>
+        <h1 class="page-title">Материалы</h1>
+    </div>
+    <a class="btn" href="{% url 'editor-article-create' %}">Новая заметка</a>
+</div>
+
+<ul class="desk-list">
+    {% for article in articles %}
+        <li class="desk-row">
+            <div>
+                <div class="desk-row__meta">
+                    {% if article.status == 'draft' %}
+                        <span class="status status--draft">Черновик</span>
+                        <span class="stamp">{{ article.updated_at|date:"d.m.Y · H:i" }}</span>
+                    {% else %}
+                        <span class="status">Опубликовано</span>
+                        <span class="stamp">{{ article.published_at|date:"d.m.Y · H:i" }}</span>
+                    {% endif %}
+                    <span class="desk">{{ article.author_name }}</span>
+                </div>
+                <h2 class="desk-row__title"><a href="{% url 'editor-article-edit' article.pk %}">{{ article.title }}</a></h2>
+                {% if article.lead %}<p class="desk-row__lead">{{ article.lead }}</p>{% endif %}
+            </div>
+            <div class="desk-row__actions">
+                <a href="{% url 'editor-article-edit' article.pk %}">Править</a>
+                {% if article.status == 'published' %}<a href="{{ article.get_absolute_url }}" target="_blank">Смотреть</a>{% endif %}
+            </div>
+        </li>
+    {% empty %}
+        <li class="empty">
+            <strong>Редакционный стол пуст.</strong>
+            <p>До редакции пока ничего не дошло. Подозрительно.</p>
+        </li>
+    {% endfor %}
+</ul>
+{% endblock %}
