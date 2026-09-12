@@ -21,5 +21,61 @@ jobs:
         run: DJANGO_DEBUG=0 DJANGO_SECRET_KEY=ci-only-secret-key DJANGO_ALLOWED_HOSTS=example.com python manage.py check
       - name: Check production ASGI and MCP boot
         run: DJANGO_DEBUG=0 DJANGO_SECRET_KEY=ci-only-secret-key DJANGO_ALLOWED_HOSTS=example.com DEAR_EDITORS_MCP_API_KEY=ci-mcp-key python -c "import deareditors.asgi; print('ASGI + MCP OK')"
+      - name: Production MCP HTTP initialize smoke
+        env:
+          DJANGO_DEBUG: "0"
+          DJANGO_SECRET_KEY: ci-production-mcp-secret-key
+          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+          DJANGO_SECURE_SSL_REDIRECT: "0"
+          DJANGO_DB_PATH: /tmp/deareditors-ci.sqlite3
+          DEAR_EDITORS_MCP_API_KEY: ci-mcp-key
+        run: |
+          set -eu
+          rm -f "$DJANGO_DB_PATH"
+          python manage.py migrate --noinput
+
+          python -m uvicorn deareditors.asgi:application \
+            --host 127.0.0.1 \
+            --port 8765 \
+            > /tmp/deareditors-mcp-smoke.log 2>&1 &
+          APP_PID=$!
+
+          cleanup() {
+            kill "$APP_PID" 2>/dev/null || true
+            wait "$APP_PID" 2>/dev/null || true
+            cat /tmp/deareditors-mcp-smoke.log
+          }
+          trap cleanup EXIT
+
+          unauthenticated=""
+          authenticated=""
+          for attempt in $(seq 1 30); do
+            unauthenticated=$(curl --silent --output /tmp/deareditors-mcp-unauth --write-out '%{http_code}' \
+              --request POST \
+              --header 'Content-Type: application/json' \
+              --header 'Accept: application/json, text/event-stream' \
+              --data '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"deareditors-ci-smoke","version":"1.0"}}}' \
+              http://127.0.0.1:8765/mcp/ || true)
+
+            authenticated=$(curl --silent --output /tmp/deareditors-mcp-response --write-out '%{http_code}' \
+              --request POST \
+              --header 'Content-Type: application/json' \
+              --header 'Accept: application/json, text/event-stream' \
+              --header "X-API-Key: ${DEAR_EDITORS_MCP_API_KEY}" \
+              --data '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"deareditors-ci-smoke","version":"1.0"}}}' \
+              http://127.0.0.1:8765/mcp/ || true)
+
+            if [ "$unauthenticated" = "401" ] && [ "$authenticated" = "200" ]; then
+              break
+            fi
+            sleep 1
+          done
+
+          echo "Dear Editors MCP unauthenticated status: $unauthenticated"
+          echo "Dear Editors MCP authenticated status: $authenticated"
+          cat /tmp/deareditors-mcp-response 2>/dev/null || true
+          test "$unauthenticated" = "401"
+          test "$authenticated" = "200"
+          python -c 'import json; payload=json.load(open("/tmp/deareditors-mcp-response")); assert payload["result"]["serverInfo"]["name"] == "Dear Editors"'
       - name: Build production image
         run: docker build -t deareditors:ci .

@@ -13,7 +13,7 @@
     {% for article in articles %}
         <article class="entry">
             <div class="byline">
-                <span class="stamp">{{ article.published_at|date:"d.m.Y · H:i" }}</span>
+                <span class="stamp">{{ article.published_at|date:"d.m.Y" }}</span>
                 <span class="desk">{{ article.author_name }}</span>
             </div>
             <h2><a href="{{ article.get_absolute_url }}">{{ article.title }}</a></h2>

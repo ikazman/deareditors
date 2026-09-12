@@ -17,9 +17,16 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: "PT 
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--rubric); outline-offset: 3px; }
 
-.masthead { display: flex; align-items: baseline; justify-content: space-between; gap: 1.5rem; padding-top: 1.4rem; padding-bottom: 1rem; border-bottom: 1px solid var(--ink); }
+.masthead { padding-top: 1.4rem; }
+.masthead__primary { display: flex; align-items: baseline; justify-content: space-between; gap: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--ink); }
 .nameplate { margin: 0; color: var(--ink); font-family: "Playfair Display", serif; font-weight: 900; font-size: clamp(1.9rem, 5.5vw, 2.9rem); line-height: .9; letter-spacing: -.015em; text-decoration: none; }
 .issue { color: var(--ink-soft); font-size: .7rem; letter-spacing: .14em; text-align: right; text-transform: uppercase; white-space: nowrap; }
+.service-nav { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: baseline; gap: .25rem .85rem; min-height: 1.65rem; padding-top: .38rem; color: var(--ink-soft); font-size: .68rem; line-height: 1.3; }
+.service-nav a { text-decoration-color: var(--rule); text-underline-offset: 2px; }
+.service-nav a:hover { color: var(--rubric); text-decoration-color: var(--rubric); }
+.service-nav form { margin: 0; }
+.service-nav button { padding: 0 0 1px; border: 0; border-bottom: 1px solid var(--rule); background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.service-nav button:hover { color: var(--rubric); border-bottom-color: var(--rubric); }
 
 .hero { padding: clamp(2.25rem, 5vw, 3.25rem) 0 0; }
 .rubric { margin: 0 0 .55rem; color: var(--rubric); font-size: .7rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; }
@@ -68,16 +75,14 @@ a { color: inherit; }
 .letter-submit { padding: .65rem 1.4rem; border: 1px solid var(--ink); border-radius: 0; background: var(--ink); color: var(--paper); font: inherit; font-size: .85rem; cursor: pointer; }
 .letter-submit:hover { background: #000; }
 .letter-errors,.letter-field .errorlist { margin: .35rem 0 0; padding: 0; color: var(--rubric); font-size: .82rem; list-style: none; }
-.colophon-link { text-decoration-color: var(--rule); text-underline-offset: 2px; }
-.colophon-link:hover { color: var(--rubric); text-decoration-color: var(--rubric); }
-.colophon-link--primary { display: inline-block; margin-top: .35rem; color: var(--ink); }
 
 .colophon { padding-top: 0; padding-bottom: 3rem; color: var(--ink-soft); font-size: .78rem; line-height: 1.5; }
 .colophon__inner { width: min(100%, 32rem); margin-left: 0; padding-top: 1.15rem; border-top: 1px solid var(--ink); }
 
 @media (max-width: 34rem) {
-    .masthead { flex-direction: column; gap: .35rem; }
-    .issue { text-align: left; }
+    .masthead__primary { flex-direction: column; align-items: flex-start; gap: .35rem; }
+    .issue { text-align: left; white-space: normal; }
+    .service-nav { justify-content: flex-start; padding-top: .55rem; }
     .hero h1 { max-width: none; }
     .colophon__inner { width: 100%; }
 }

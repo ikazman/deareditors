@@ -6,7 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Dear Editors — до дорогой редакции дошел слух.">
     <meta name="robots" content="noindex,nofollow,noarchive">
+    <meta name="theme-color" content="#f3f0e9">
     <title>{% block title %}Dear Editors{% endblock %}</title>
+    <link rel="icon" href="{% static 'news/favicon.svg' %}" type="image/svg+xml">
+    <link rel="manifest" href="{% static 'news/icons/site.webmanifest' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -16,8 +19,20 @@
 </head>
 <body>
     <header class="wrap masthead">
-        <a class="nameplate" href="{% if request.user.is_authenticated %}{% url 'article-list' %}{% else %}{% url 'login' %}{% endif %}">Dear Editors</a>
-        <div class="issue">Внутреннее издание · {% now "j E Y" %}</div>
+        <div class="masthead__primary">
+            <a class="nameplate" href="{% if request.user.is_authenticated %}{% url 'article-list' %}{% else %}{% url 'login' %}{% endif %}">Dear Editors</a>
+            <div class="issue">Внутреннее издание · {% now "j E Y" %}</div>
+        </div>
+        {% if request.user.is_authenticated %}
+            <nav class="service-nav" aria-label="Служебная навигация">
+                <a href="{% url 'letter-create' %}">Письмо в редакцию</a>
+                {% if request.user.is_staff %}<a href="{% url 'editor-dashboard' %}">Редакционный стол</a>{% endif %}
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit">Выйти</button>
+                </form>
+            </nav>
+        {% endif %}
     </header>
 
     <main class="wrap">
@@ -30,21 +45,7 @@
     </main>
 
     <footer class="wrap colophon">
-        <div class="colophon__inner">
-            <div>Dear Editors — внутреннее издание. Слухи проверяются по мере возможности, опровергаются по мере необходимости.</div>
-            {% if request.user.is_authenticated %}
-                <div class="colophon-session">
-                    <a class="colophon-link colophon-link--primary" href="{% url 'letter-create' %}">Письма в дорогую редакцию принимаются круглосуточно.</a>
-                    {% if request.user.is_staff %}<a class="colophon-link" href="{% url 'editor-dashboard' %}">Редакционный стол</a>{% endif %}
-                    <form method="post" action="{% url 'logout' %}">
-                        {% csrf_token %}
-                        <button class="colophon-button" type="submit">Выйти</button>
-                    </form>
-                </div>
-            {% else %}
-                <div class="colophon-private">Распространяется по приглашениям редакции.</div>
-            {% endif %}
-        </div>
+        <div class="colophon__inner">Dear Editors — внутреннее издание. Слухи проверяются по мере возможности, опровергаются по мере необходимости. Распространяется по приглашениям редакции.</div>
     </footer>
 </body>
 </html>
