@@ -36,8 +36,12 @@ class Article(models.Model):
                 candidate = f"{base}-{counter}"
                 counter += 1
             self.slug = candidate
+
         if self.status == self.Status.PUBLISHED and self.published_at is None:
             self.published_at = timezone.now()
+        elif self.status == self.Status.DRAFT:
+            self.published_at = None
+
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):

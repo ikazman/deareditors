@@ -1,0 +1,41 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Редакционный стол — Dear Editors{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=PT+Serif:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'news/editor.css' %}">
+</head>
+<body>
+    <header class="desk-head">
+        <div class="desk-wrap desk-head__inner">
+            <div>
+                <a class="desk-brand" href="{% url 'editor-dashboard' %}">Dear Editors</a>
+                <span class="desk-kicker">Редакционный стол</span>
+            </div>
+            {% if request.user.is_authenticated %}
+                <nav class="desk-nav">
+                    <a href="{% url 'article-list' %}" target="_blank">Открыть издание ↗</a>
+                    <form method="post" action="{% url 'editor-logout' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="desk-link-button">Выйти</button>
+                    </form>
+                </nav>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="desk-wrap desk-main">
+        {% if messages %}
+            <div class="desk-messages">
+                {% for message in messages %}<p>{{ message }}</p>{% endfor %}
+            </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

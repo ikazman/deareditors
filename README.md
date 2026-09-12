@@ -12,7 +12,7 @@
 
 ## Первый релиз
 
-Dear Editors пока намеренно маленький: публичная лента, отдельная страница публикации и редактура через Django Admin. Публикации имеют статусы `draft` / `published`; наружу попадают только опубликованные материалы.
+Dear Editors пока намеренно маленький: публичная лента, отдельная страница публикации и собственный редакционный стол. Публикации имеют статусы `draft` / `published`; наружу попадают только опубликованные материалы.
 
 ## Быстрый старт
 
@@ -22,13 +22,15 @@ source .venv/bin/activate  # Windows Git Bash: source .venv/Scripts/activate
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py seed_demo
+python manage.py createsuperuser
 python manage.py runserver
 ```
 
 После запуска:
 
 - `/` — редакционная лента;
-- `/admin/` — Django Admin (для входа сначала `python manage.py createsuperuser`).
+- `/editor/` — редакционный стол;
+- `/admin/` — запасной Django Admin.
 
 ## Проверка
 

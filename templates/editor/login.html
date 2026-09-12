@@ -1,0 +1,22 @@
+{% extends 'editor/base.html' %}
+
+{% block title %}Вход в редакцию — Dear Editors{% endblock %}
+
+{% block content %}
+<section class="login-card">
+    <p class="desk-rubric">Для своих</p>
+    <h1>Вход в редакцию</h1>
+    <p>Публиковать слухи может не каждый. И это, вероятно, к лучшему.</p>
+
+    <form method="post" class="editor-form login-form">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+        <label for="{{ form.username.id_for_label }}">Имя пользователя</label>
+        {{ form.username }}
+        <label for="{{ form.password.id_for_label }}">Пароль</label>
+        {{ form.password }}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+        <button class="button button--primary" type="submit">Войти</button>
+    </form>
+</section>
+{% endblock %}

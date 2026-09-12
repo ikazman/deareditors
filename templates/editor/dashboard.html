@@ -1,0 +1,38 @@
+{% extends 'editor/base.html' %}
+
+{% block content %}
+<section class="desk-title-row">
+    <div>
+        <p class="desk-rubric">Редакция</p>
+        <h1>Материалы</h1>
+    </div>
+    <a class="button button--primary" href="{% url 'editor-article-create' %}">+ Новая заметка</a>
+</section>
+
+<section class="editor-list">
+    {% for article in articles %}
+        <article class="editor-row">
+            <div class="editor-row__status editor-row__status--{{ article.status }}">
+                {{ article.get_status_display }}
+            </div>
+            <div class="editor-row__body">
+                <div class="editor-row__meta">
+                    <span>{{ article.updated_at|date:"d.m.Y · H:i" }}</span>
+                    <span>{{ article.author_name }}</span>
+                </div>
+                <h2><a href="{% url 'editor-article-edit' article.pk %}">{{ article.title }}</a></h2>
+                {% if article.lead %}<p>{{ article.lead }}</p>{% endif %}
+            </div>
+            <div class="editor-row__actions">
+                <a href="{% url 'editor-article-edit' article.pk %}">Править</a>
+                {% if article.status == 'published' %}<a href="{{ article.get_absolute_url }}" target="_blank">Смотреть ↗</a>{% endif %}
+            </div>
+        </article>
+    {% empty %}
+        <div class="desk-empty">
+            <strong>Редакционный стол пуст.</strong>
+            <p>До редакции пока ничего не дошло. Подозрительно.</p>
+        </div>
+    {% endfor %}
+</section>
+{% endblock %}

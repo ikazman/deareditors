@@ -1,0 +1,54 @@
+{% extends 'editor/base.html' %}
+
+{% block title %}{% if article.pk %}Правка{% else %}Новая заметка{% endif %} — Dear Editors{% endblock %}
+
+{% block content %}
+<section class="form-head">
+    <a class="desk-back" href="{% url 'editor-dashboard' %}">← К материалам</a>
+    <p class="desk-rubric">{% if article.pk %}Редактура{% else %}Новый материал{% endif %}</p>
+    <div class="form-head__line">
+        <h1>{% if article.pk %}{{ article.title }}{% else %}Новая заметка{% endif %}</h1>
+        {% if article.pk %}<span class="status-pill status-pill--{{ article.status }}">{{ article.get_status_display }}</span>{% endif %}
+    </div>
+</section>
+
+<form method="post" class="editor-form article-editor">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+
+    <div class="field field--title">
+        <label for="{{ form.title.id_for_label }}">Заголовок</label>
+        {{ form.title }}
+        {{ form.title.errors }}
+    </div>
+
+    <div class="field">
+        <label for="{{ form.lead.id_for_label }}">Лид</label>
+        {{ form.lead }}
+        {{ form.lead.errors }}
+    </div>
+
+    <div class="field">
+        <label for="{{ form.body.id_for_label }}">Текст</label>
+        {{ form.body }}
+        {{ form.body.errors }}
+    </div>
+
+    <div class="field field--author">
+        <label for="{{ form.author_name.id_for_label }}">Подпись редакции</label>
+        {{ form.author_name }}
+        {{ form.author_name.errors }}
+    </div>
+
+    <div class="editor-actions">
+        {% if article.pk and article.status == 'published' %}
+            <button class="button button--primary" type="submit" name="action" value="save">Сохранить изменения</button>
+            <button class="button button--quiet" type="submit" name="action" value="draft">Снять с публикации</button>
+            <a class="button button--text" href="{{ article.get_absolute_url }}" target="_blank">Открыть заметку ↗</a>
+        {% else %}
+            <button class="button button--quiet" type="submit" name="action" value="draft">Сохранить черновик</button>
+            <button class="button button--primary" type="submit" name="action" value="publish">Опубликовать</button>
+        {% endif %}
+    </div>
+</form>
+{% endblock %}
