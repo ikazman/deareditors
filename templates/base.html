@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Dear Editors — до дорогой редакции дошел слух.">
+    <meta name="robots" content="noindex,nofollow,noarchive">
     <title>{% block title %}Dear Editors{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,18 +15,34 @@
 </head>
 <body>
     <header class="wrap masthead">
-        <a class="nameplate" href="{% url 'article-list' %}">Dear Editors</a>
+        <a class="nameplate" href="{% if request.user.is_authenticated %}{% url 'article-list' %}{% else %}{% url 'login' %}{% endif %}">Dear Editors</a>
         <div class="issue">Внутреннее издание · {% now "j E Y" %}</div>
     </header>
 
     <main class="wrap">
+        {% if messages %}
+            <div class="public-flash">
+                {% for message in messages %}<p>{{ message }}</p>{% endfor %}
+            </div>
+        {% endif %}
         {% block content %}{% endblock %}
     </main>
 
     <footer class="wrap colophon">
         <div class="colophon__inner">
             <div>Dear Editors — внутреннее издание. Слухи проверяются по мере возможности, опровергаются по мере необходимости.</div>
-            <a class="colophon-link colophon-link--primary" href="{% url 'letter-create' %}">Письма в дорогую редакцию принимаются круглосуточно.</a>
+            {% if request.user.is_authenticated %}
+                <div class="colophon-session">
+                    <a class="colophon-link colophon-link--primary" href="{% url 'letter-create' %}">Письма в дорогую редакцию принимаются круглосуточно.</a>
+                    {% if request.user.is_staff %}<a class="colophon-link" href="{% url 'editor-dashboard' %}">Редакционный стол</a>{% endif %}
+                    <form method="post" action="{% url 'logout' %}">
+                        {% csrf_token %}
+                        <button class="colophon-button" type="submit">Выйти</button>
+                    </form>
+                </div>
+            {% else %}
+                <div class="colophon-private">Распространяется по приглашениям редакции.</div>
+            {% endif %}
         </div>
     </footer>
 </body>
