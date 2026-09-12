@@ -1,0 +1,62 @@
+{% extends 'editor/base.html' %}
+
+{% block title %}Приглашения — Dear Editors{% endblock %}
+{% block main_class %}wrap--read{% endblock %}
+
+{% block content %}
+<a class="backlink" href="{% url 'editor-dashboard' %}">К материалам</a>
+
+<div class="page-head">
+    <div>
+        <p class="rubric">Доступ к изданию</p>
+        <h1 class="page-title">Приглашения</h1>
+    </div>
+</div>
+
+<form class="invite-form" method="post">
+    {% csrf_token %}
+    <div class="field">
+        <label class="field__label" for="{{ form.label.id_for_label }}">Для кого</label>
+        {{ form.label }}
+        <span class="field__hint">Необязательно. Помогает редакции помнить, кому предназначалась ссылка.</span>
+        {{ form.label.errors }}
+    </div>
+    <button class="btn" type="submit">Подготовить приглашение</button>
+</form>
+
+<section class="invite-list" aria-label="Приглашения">
+    {% for invitation in invitations %}
+        <article class="invite-row">
+            <div class="invite-row__meta">
+                {% if invitation.accepted_at %}
+                    <span class="status">Принято</span>
+                {% elif invitation.revoked_at %}
+                    <span class="status">Отозвано</span>
+                {% elif invitation.is_active %}
+                    <span class="status status--draft">Действует</span>
+                {% else %}
+                    <span class="status">Истекло</span>
+                {% endif %}
+                <span class="stamp">{{ invitation.created_at|date:"d.m.Y · H:i" }}</span>
+                {% if invitation.label %}<span class="desk">{{ invitation.label }}</span>{% endif %}
+            </div>
+
+            {% if invitation.accepted_by %}
+                <p class="invite-row__note">Принято пользователем {{ invitation.accepted_by.username }}.</p>
+            {% elif invitation.is_active %}
+                <label class="field__label" for="invite-{{ invitation.pk }}">Ссылка</label>
+                <input id="invite-{{ invitation.pk }}" class="input invite-url" type="text" value="{{ invitation.share_url }}" readonly onclick="this.select()">
+                <p class="field__hint">Действует до {{ invitation.expires_at|date:"d.m.Y · H:i" }} и только один раз.</p>
+                <form class="invite-revoke" method="post" action="{% url 'editor-invitation-revoke' invitation.pk %}">
+                    {% csrf_token %}
+                    <button class="btn btn--danger" type="submit">Отозвать приглашение</button>
+                </form>
+            {% else %}
+                <p class="invite-row__note">Эта ссылка больше не открывает доступ к изданию.</p>
+            {% endif %}
+        </article>
+    {% empty %}
+        <p class="empty">Редакция пока никого не приглашала. Круг распространения остается безупречно узким.</p>
+    {% endfor %}
+</section>
+{% endblock %}
