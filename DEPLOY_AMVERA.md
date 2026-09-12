@@ -8,8 +8,9 @@ On every start the container:
 
 1. mounts persistent storage at `/data`;
 2. runs Django migrations;
-3. collects static files;
-4. starts the ASGI application with Uvicorn on `0.0.0.0:$PORT`.
+3. creates the first editor if bootstrap credentials are configured and that editor does not exist yet;
+4. collects static files;
+5. starts the ASGI application with Uvicorn on `0.0.0.0:$PORT`.
 
 The ASGI application serves both the closed Dear Editors site and the authenticated editorial MCP endpoint.
 
@@ -37,7 +38,15 @@ Set these in the Amvera application variables before the first production start:
 DJANGO_DEBUG=0
 DJANGO_SECRET_KEY=<long-random-secret>
 DJANGO_ALLOWED_HOSTS=<your-amvera-hostname>
+
+DEAR_EDITORS_ADMIN_USERNAME=<first-editor-username>
+DEAR_EDITORS_ADMIN_PASSWORD=<strong-first-editor-password>
+DEAR_EDITORS_ADMIN_EMAIL=<optional-email>
 ```
+
+`DEAR_EDITORS_ADMIN_EMAIL` is optional. The username and password are used only to create the first editor/superuser on a fresh database. If that editor already exists, the bootstrap command never changes the account or resets its password.
+
+After the first successful start and a successful login, remove `DEAR_EDITORS_ADMIN_PASSWORD` from the Amvera variables. Keeping `DEAR_EDITORS_ADMIN_USERNAME` is harmless: later deployments will see the existing editor and skip the bootstrap. You may remove the username and email as well if you prefer.
 
 Generate a Django secret locally with:
 
@@ -119,11 +128,12 @@ Then verify:
 - `/login/` opens over HTTPS;
 - an anonymous request to `/` redirects to login;
 - CSS and fonts are present;
-- the editor account can open `/editor/`;
+- the bootstrap editor can log in and open `/editor/`;
 - an invitation can be created and accepted by a new reader;
-- an article can be created and survives an application restart.
+- an article can be created and survives an application restart;
+- after that verification, remove `DEAR_EDITORS_ADMIN_PASSWORD` from Amvera.
 
-The last check confirms that `/data` persistence is working.
+The restart check confirms that `/data` persistence is working.
 
 If MCP is enabled, also connect Perplexity to:
 
