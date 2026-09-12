@@ -24,10 +24,10 @@
         <span class="masthead__desk">Редакционный стол</span>
     </div>
     <nav class="masthead__nav">
-        <a href="{% url 'editor-inbox' %}">Почта редакции</a>
+        <a href="{% url 'editor-inbox' %}"><span class="nav-label nav-label--desktop">Почта редакции</span><span class="nav-label nav-label--mobile">Почта</span></a>
         <a href="{% url 'editor-invitations' %}">Приглашения</a>
-        <a href="{% url 'editor-integrations' %}">Интеграции</a>
-        <a href="{% url 'article-list' %}" target="_blank">Открыть издание ↗</a>
+        <a href="{% url 'editor-integrations' %}"><span class="nav-label nav-label--desktop">Интеграции</span><span class="nav-label nav-label--mobile">ИИ</span></a>
+        <a href="{% url 'article-list' %}" target="_blank"><span class="nav-label nav-label--desktop">Открыть издание ↗</span><span class="nav-label nav-label--mobile">Издание ↗</span></a>
         <form method="post" action="{% url 'logout' %}">
             {% csrf_token %}
             <button class="nav-link" type="submit">Выйти</button>
