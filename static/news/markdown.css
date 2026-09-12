@@ -1,0 +1,17 @@
+.article__body ul,
+.article__body ol{
+  max-width:var(--read);
+  margin:0 0 1.1rem;
+  padding-left:1.35rem;
+}
+
+.article__body li{margin:.25rem 0}
+.article__body strong{font-weight:700}
+.article__body em{font-style:italic}
+.article__body a{
+  color:var(--ink);
+  text-decoration-color:var(--rule);
+  text-underline-offset:.14em;
+  text-decoration-thickness:1px;
+}
+.article__body a:hover{color:var(--rubric);text-decoration-color:var(--rubric)}
