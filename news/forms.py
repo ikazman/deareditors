@@ -22,12 +22,14 @@ class ArticleForm(forms.ModelForm):
             "lead": forms.Textarea(
                 attrs={
                     "class": "textarea textarea--lead",
+                    "rows": 2,
                     "placeholder": "Одна фраза, которая делает всю работу",
                 }
             ),
             "body": forms.Textarea(
                 attrs={
                     "class": "textarea textarea--body",
+                    "rows": 12,
                     "placeholder": "До дорогой редакции дошел слух, что…",
                 }
             ),
