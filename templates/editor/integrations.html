@@ -17,6 +17,15 @@
     <p>Ключи дают внешнему редакционному помощнику доступ только к MCP Dear Editors: чтению материалов и почты, а также работе с черновиками. Публикация и управление доступом через MCP недоступны.</p>
 </section>
 
+<section class="integration-endpoint" aria-label="Подключение к MCP">
+    <p class="rubric">Подключение</p>
+    <div class="field">
+        <label class="field__label" for="mcp-server-url">Адрес MCP-сервера</label>
+        <input id="mcp-server-url" class="input invite-url" type="text" value="{{ mcp_url }}" readonly onclick="this.select()">
+    </div>
+    <p class="integration-endpoint__meta">Транспорт: <strong>Streamable HTTP</strong> · Авторизация: <strong>API Key</strong></p>
+</section>
+
 {% if raw_key %}
 <section class="secret-card" aria-label="Новый ключ MCP">
     <p class="rubric">Новый ключ</p>

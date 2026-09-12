@@ -48,6 +48,24 @@
     margin: 0;
 }
 
+.integration-endpoint {
+    max-width: 38rem;
+    margin-top: 1.5rem;
+    padding: 1.25rem 0;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+}
+
+.integration-endpoint .field {
+    margin: 0;
+}
+
+.integration-endpoint__meta {
+    margin: .55rem 0 0;
+    color: var(--ink-soft);
+    font-size: .8rem;
+}
+
 .secret-card {
     max-width: 38rem;
     margin-top: 1.5rem;
