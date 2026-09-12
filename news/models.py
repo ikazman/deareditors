@@ -123,3 +123,36 @@ class Invitation(models.Model):
 
     def get_absolute_url(self):
         return reverse("invite-accept", kwargs={"token": self.token})
+
+
+class MCPAccessKey(models.Model):
+    label = models.CharField("название", max_length=120)
+    prefix = models.CharField("префикс", max_length=16, unique=True)
+    key_hash = models.CharField("хеш ключа", max_length=64, unique=True, editable=False)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name="создал",
+        related_name="created_mcp_keys",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField("создано", auto_now_add=True)
+    last_used_at = models.DateTimeField("последнее использование", blank=True, null=True)
+    revoked_at = models.DateTimeField("отозвано", blank=True, null=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "ключ MCP"
+        verbose_name_plural = "ключи MCP"
+
+    def __str__(self):
+        return self.label
+
+    @property
+    def is_active(self):
+        return self.revoked_at is None
+
+    @property
+    def masked(self):
+        return f"de_mcp_{self.prefix}_…"
