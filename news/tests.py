@@ -24,6 +24,32 @@ class PublishingTests(TestCase):
         self.assertEqual(detail.status_code, 200)
         self.assertContains(detail, "Будем наблюдать.", count=1)
 
+    def test_article_renders_only_editorial_markdown_subset(self):
+        article = Article.objects.create(
+            title="Редакция освоила форматирование",
+            body=(
+                "**Жирный** и *курсив*.\n\n"
+                "- Первый пункт\n- Второй пункт\n\n"
+                "1. Первый номер\n2. Второй номер\n\n"
+                "[Нормальная ссылка](https://example.com)\n\n"
+                "[Плохая ссылка](javascript:alert(1))\n\n"
+                "# Это не подзаголовок\n\n"
+                "<script>alert('нет')</script>"
+            ),
+            status=Article.Status.PUBLISHED,
+        )
+
+        html = self.client.get(article.get_absolute_url()).content.decode()
+        self.assertIn("<strong>Жирный</strong>", html)
+        self.assertIn("<em>курсив</em>", html)
+        self.assertIn("<ul>", html)
+        self.assertIn("<ol>", html)
+        self.assertIn('<a href="https://example.com">Нормальная ссылка</a>', html)
+        self.assertNotIn('href="javascript:', html)
+        self.assertIn("# Это не подзаголовок", html)
+        self.assertIn("&lt;script&gt;", html)
+        self.assertNotIn("<script>alert('нет')</script>", html)
+
     def test_slug_is_generated_and_kept_unique(self):
         first = Article.objects.create(title="Очень важный слух", body="Первый")
         second = Article.objects.create(title="Очень важный слух", body="Второй")
