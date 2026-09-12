@@ -1,10 +1,10 @@
 import logging
 import os
-import secrets
 from contextlib import asynccontextmanager
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "deareditors.settings")
 
+from asgiref.sync import sync_to_async  # noqa: E402
 from django.core.asgi import get_asgi_application  # noqa: E402
 
 django_application = get_asgi_application()
@@ -15,6 +15,7 @@ from starlette.applications import Starlette  # noqa: E402
 from starlette.responses import PlainTextResponse  # noqa: E402
 from starlette.routing import Mount  # noqa: E402
 
+from news.mcp_access import authenticate_mcp_key  # noqa: E402
 from .mcp_server import mcp  # noqa: E402
 
 
@@ -58,7 +59,7 @@ def _transport_security() -> TransportSecuritySettings:
 
 
 class MCPApiKeyMiddleware:
-    """Keep the editorial MCP on a credential boundary independent of reader sessions."""
+    """Authenticate editorial MCP requests against revocable keys stored by Dear Editors."""
 
     def __init__(self, app):
         self.app = app
@@ -66,12 +67,6 @@ class MCPApiKeyMiddleware:
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             await self.app(scope, receive, send)
-            return
-
-        expected = os.environ.get("DEAR_EDITORS_MCP_API_KEY", "")
-        if not expected:
-            response = PlainTextResponse("MCP is not configured", status_code=503)
-            await response(scope, receive, send)
             return
 
         headers = {key.lower(): value for key, value in scope.get("headers", [])}
@@ -84,7 +79,16 @@ class MCPApiKeyMiddleware:
         elif authorization:
             candidates.append(authorization)
 
-        if not any(candidate and secrets.compare_digest(candidate, expected) for candidate in candidates):
+        authenticated = False
+        for candidate in candidates:
+            if not candidate:
+                continue
+            access_key = await sync_to_async(authenticate_mcp_key, thread_sensitive=True)(candidate)
+            if access_key is not None:
+                authenticated = True
+                break
+
+        if not authenticated:
             response = PlainTextResponse("Unauthorized", status_code=401)
             await response(scope, receive, send)
             return
