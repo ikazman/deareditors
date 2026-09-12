@@ -20,7 +20,7 @@ jobs:
       - name: Check production settings
         run: DJANGO_DEBUG=0 DJANGO_SECRET_KEY=ci-only-secret-key DJANGO_ALLOWED_HOSTS=example.com python manage.py check
       - name: Check production ASGI and MCP boot
-        run: DJANGO_DEBUG=0 DJANGO_SECRET_KEY=ci-only-secret-key DJANGO_ALLOWED_HOSTS=example.com DEAR_EDITORS_MCP_API_KEY=ci-mcp-key python -c "import deareditors.asgi; print('ASGI + MCP OK')"
+        run: DJANGO_DEBUG=0 DJANGO_SECRET_KEY=ci-only-secret-key DJANGO_ALLOWED_HOSTS=example.com python -c "import deareditors.asgi; print('ASGI + MCP OK')"
       - name: Production MCP HTTP initialize smoke
         env:
           DJANGO_DEBUG: "0"
@@ -28,11 +28,11 @@ jobs:
           DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
           DJANGO_SECURE_SSL_REDIRECT: "0"
           DJANGO_DB_PATH: /tmp/deareditors-ci.sqlite3
-          DEAR_EDITORS_MCP_API_KEY: ci-mcp-key
         run: |
           set -eu
           rm -f "$DJANGO_DB_PATH"
           python manage.py migrate --noinput
+          MCP_TOKEN=$(python manage.py shell -c 'from news.mcp_access import issue_mcp_key; print(issue_mcp_key(label="CI production smoke")[1])' | tail -n 1)
 
           python -m uvicorn deareditors.asgi:application \
             --host 127.0.0.1 \
@@ -61,7 +61,7 @@ jobs:
               --request POST \
               --header 'Content-Type: application/json' \
               --header 'Accept: application/json, text/event-stream' \
-              --header "X-API-Key: ${DEAR_EDITORS_MCP_API_KEY}" \
+              --header "X-API-Key: ${MCP_TOKEN}" \
               --data '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"deareditors-ci-smoke","version":"1.0"}}}' \
               http://127.0.0.1:8765/mcp/ || true)
 

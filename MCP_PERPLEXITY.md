@@ -22,23 +22,26 @@ There is intentionally no tool for publishing, unpublishing, deleting articles, 
 
 ## Authentication
 
-MCP uses a separate application secret. It does not accept Dear Editors reader sessions or editor passwords.
+MCP uses dedicated revocable application keys. It does not accept Dear Editors reader sessions or editor passwords.
 
-Generate a key locally:
-
-```bash
-python -c "import secrets; print(secrets.token_urlsafe(48))"
-```
-
-Add the generated value to the Amvera application variables:
+After deployment, open the editorial desk and go to:
 
 ```text
-DEAR_EDITORS_MCP_API_KEY=<generated-secret>
+/editor/integrations/
 ```
 
-If this variable is missing, `/mcp/` returns `503` and the rest of Dear Editors continues to work normally.
+Enter a label such as `Perplexity` and issue a new key. The full value is shown only once. Copy it directly into Perplexity before leaving the page.
 
-The endpoint accepts the key as `Authorization: Bearer <key>` and also understands `X-API-Key` for compatibility with other MCP clients.
+Dear Editors stores only a SHA-256 digest of the full high-entropy key plus a short non-secret prefix used to identify it in the interface. Several keys can remain active at once.
+
+For rotation without downtime:
+
+1. issue a new key;
+2. replace the key in Perplexity;
+3. verify the connector works;
+4. revoke the old key in Dear Editors.
+
+The endpoint accepts a valid key as `Authorization: Bearer <key>` and also understands `X-API-Key` for compatibility with other MCP clients.
 
 ## Connect Perplexity
 
@@ -55,7 +58,7 @@ After Dear Editors is deployed:
    https://<your-dear-editors-host>/mcp/
    ```
 
-5. Choose **API Key** authentication and paste the value of `DEAR_EDITORS_MCP_API_KEY`.
+5. Choose **API Key** authentication and paste a key issued from `/editor/integrations/`.
 6. Choose **Streamable HTTP** transport.
 7. Save and enable the connector.
 
@@ -92,6 +95,8 @@ DEAR_EDITORS_MCP_ALLOWED_ORIGINS=https://www.perplexity.ai,https://another-host.
 
 ## Security boundary
 
-The MCP key is an editorial credential: anyone holding it can read the editorial inbox, including sender names and contacts, and can create or edit drafts. Treat it like a password, store it only in Amvera and the connector configuration, and rotate it if it may have leaked.
+An MCP key is an editorial credential: anyone holding it can read the editorial inbox, including sender names and contacts, and can create or edit drafts. Treat it like a password and store it only in the connector configuration.
+
+If a key may have leaked, revoke it immediately in `/editor/integrations/` and issue another. Revocation takes effect without a deployment or application restart.
 
 The key cannot publish a story or grant access to the newspaper. Those actions remain outside the MCP surface by design.

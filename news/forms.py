@@ -86,6 +86,20 @@ class InvitationForm(forms.ModelForm):
         }
 
 
+class MCPKeyForm(forms.Form):
+    label = forms.CharField(
+        label="Название",
+        max_length=120,
+        widget=forms.TextInput(
+            attrs={
+                "class": "input",
+                "placeholder": "Например: Perplexity",
+                "autofocus": True,
+            }
+        ),
+    )
+
+
 class ArticleForm(forms.ModelForm):
     class Meta:
         model = Article

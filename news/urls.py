@@ -35,6 +35,12 @@ urlpatterns = [
         views.editor_invitation_revoke,
         name="editor-invitation-revoke",
     ),
+    path("editor/integrations/", views.editor_integrations, name="editor-integrations"),
+    path(
+        "editor/integrations/mcp/<int:pk>/revoke/",
+        views.editor_mcp_key_revoke,
+        name="editor-mcp-key-revoke",
+    ),
     path("editor/inbox/<int:pk>/review/", views.editor_letter_review, name="editor-letter-review"),
     path("editor/inbox/<int:pk>/convert/", views.editor_letter_convert, name="editor-letter-convert"),
     path("editor/new/", views.editor_article_create, name="editor-article-create"),

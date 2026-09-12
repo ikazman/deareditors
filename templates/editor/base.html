@@ -26,6 +26,7 @@
     <nav class="masthead__nav">
         <a href="{% url 'editor-inbox' %}">Почта редакции</a>
         <a href="{% url 'editor-invitations' %}">Приглашения</a>
+        <a href="{% url 'editor-integrations' %}">Интеграции</a>
         <a href="{% url 'article-list' %}" target="_blank">Открыть издание ↗</a>
         <form method="post" action="{% url 'logout' %}">
             {% csrf_token %}

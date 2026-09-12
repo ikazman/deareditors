@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Article, EditorialLetter, Invitation
+from .models import Article, EditorialLetter, Invitation, MCPAccessKey
 
 
 @admin.register(Article)
@@ -29,6 +29,19 @@ class InvitationAdmin(admin.ModelAdmin):
     list_display = ("label", "created_by", "created_at", "expires_at", "accepted_by", "revoked_at")
     search_fields = ("label", "accepted_by__username", "accepted_by__first_name")
     readonly_fields = ("token", "created_at", "accepted_at", "accepted_by", "revoked_at")
+
+
+@admin.register(MCPAccessKey)
+class MCPAccessKeyAdmin(admin.ModelAdmin):
+    list_display = ("label", "prefix", "created_by", "created_at", "last_used_at", "revoked_at")
+    search_fields = ("label", "prefix", "created_by__username")
+    readonly_fields = ("prefix", "key_hash", "created_by", "created_at", "last_used_at", "revoked_at")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
 
 
 admin.site.site_header = "Dear Editors — редакция"
