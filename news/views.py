@@ -10,8 +10,9 @@ from django.views.decorators.http import require_POST
 
 from .auth import editor_required
 from .editorial_service import create_or_update_draft_from_letter
-from .forms import ArticleForm, EditorialLetterForm, InvitationAcceptForm, InvitationForm
-from .models import Article, EditorialLetter, Invitation
+from .forms import ArticleForm, EditorialLetterForm, InvitationAcceptForm, InvitationForm, MCPKeyForm
+from .mcp_access import issue_mcp_key
+from .models import Article, EditorialLetter, Invitation, MCPAccessKey
 
 
 def health(request):
@@ -139,6 +140,36 @@ def editor_invitation_revoke(request, pk):
         invitation.save(update_fields=["revoked_at"])
         messages.success(request, "Приглашение отозвано.")
     return redirect("editor-invitations")
+
+
+@editor_required
+def editor_integrations(request):
+    raw_key = None
+    if request.method == "POST":
+        form = MCPKeyForm(request.POST)
+        if form.is_valid():
+            _, raw_key = issue_mcp_key(label=form.cleaned_data["label"], created_by=request.user)
+            form = MCPKeyForm()
+    else:
+        form = MCPKeyForm()
+
+    keys = MCPAccessKey.objects.select_related("created_by")
+    return render(
+        request,
+        "editor/integrations.html",
+        {"form": form, "keys": keys, "raw_key": raw_key},
+    )
+
+
+@editor_required
+@require_POST
+def editor_mcp_key_revoke(request, pk):
+    access_key = get_object_or_404(MCPAccessKey, pk=pk)
+    if access_key.is_active:
+        access_key.revoked_at = timezone.now()
+        access_key.save(update_fields=["revoked_at"])
+        messages.success(request, f"Ключ «{access_key.label}» отозван.")
+    return redirect("editor-integrations")
 
 
 @editor_required
