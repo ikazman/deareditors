@@ -37,3 +37,42 @@
 .invite-revoke {
     margin-top: .7rem;
 }
+
+.integration-intro {
+    max-width: 38rem;
+    margin: 1.2rem 0 0;
+    color: var(--ink-soft);
+}
+
+.integration-intro p {
+    margin: 0;
+}
+
+.secret-card {
+    max-width: 38rem;
+    margin-top: 1.5rem;
+    padding: 1.25rem 1.35rem;
+    border: 1px solid var(--rubric);
+}
+
+.secret-card h2 {
+    margin: 0 0 .35rem;
+    font-family: "Playfair Display", serif;
+    font-size: 1.45rem;
+}
+
+.secret-card p {
+    margin: 0 0 1rem;
+    color: var(--ink-soft);
+    font-size: .9rem;
+}
+
+.secret-value {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: .82rem;
+}
+
+.invite-row code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: .82rem;
+}
