@@ -65,7 +65,11 @@ a{color:inherit}
 .input:focus,.textarea:focus,.login input[type="text"]:focus,.login input[type="password"]:focus{outline:0;border-bottom-color:var(--rubric);border-bottom-width:2px;padding-bottom:calc(.45rem - 1px)}
 .input::placeholder,.textarea::placeholder{color:var(--ink-faint);opacity:1}
 .input--display{font-family:"Playfair Display",serif;font-weight:700;font-size:1.5rem;line-height:1.25}
-.textarea{resize:vertical}
+.textarea{resize:vertical;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--rule) transparent}
+.textarea::-webkit-scrollbar{width:10px}
+.textarea::-webkit-scrollbar-track{background:transparent}
+.textarea::-webkit-scrollbar-thumb{background:var(--rule);border:3px solid var(--paper);border-radius:0}
+.textarea:hover::-webkit-scrollbar-thumb{background:var(--ink-faint)}
 .textarea--lead{min-height:4.5rem}
 .textarea--body{min-height:15rem}
 .input:-webkit-autofill,.input:-webkit-autofill:hover,.input:-webkit-autofill:focus,.login input:-webkit-autofill{-webkit-box-shadow:inset 0 0 0 100px var(--paper);-webkit-text-fill-color:var(--ink);caret-color:var(--ink)}
