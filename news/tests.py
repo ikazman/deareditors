@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Article
+from .models import Article, EditorialLetter
 
 
 class PublishingTests(TestCase):
@@ -124,3 +124,54 @@ class EditorialDeskTests(TestCase):
         self.assertEqual(article.status, Article.Status.DRAFT)
         self.assertIsNone(article.published_at)
         self.assertNotContains(self.client.get(reverse("article-list")), article.title)
+
+
+class EditorialInboxTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(username="editor", password="secret-pass")
+
+    def test_public_can_send_anonymous_letter(self):
+        response = self.client.post(
+            reverse("letter-create"),
+            {"body": "В переговорной происходит что-то подозрительное.", "sender_name": "", "contact": ""},
+        )
+        self.assertRedirects(response, reverse("letter-sent"))
+        letter = EditorialLetter.objects.get()
+        self.assertEqual(letter.status, EditorialLetter.Status.NEW)
+        self.assertEqual(letter.sender_name, "")
+        self.assertEqual(letter.contact, "")
+
+    def test_inbox_requires_login(self):
+        response = self.client.get(reverse("editor-inbox"))
+        self.assertRedirects(response, f"{reverse('editor-login')}?next={reverse('editor-inbox')}")
+
+    def test_editor_can_mark_letter_reviewed(self):
+        letter = EditorialLetter.objects.create(body="Проверить календарь.")
+        self.client.force_login(self.user)
+        self.client.post(reverse("editor-letter-review", args=[letter.pk]))
+        letter.refresh_from_db()
+        self.assertEqual(letter.status, EditorialLetter.Status.REVIEWED)
+        self.assertIsNotNone(letter.reviewed_at)
+
+    def test_editor_can_convert_letter_to_one_draft(self):
+        letter = EditorialLetter.objects.create(
+            body="На третьем этаже снова совещание без повестки.",
+            sender_name="Источник",
+            contact="source@example.test",
+        )
+        self.client.force_login(self.user)
+
+        first = self.client.post(reverse("editor-letter-convert", args=[letter.pk]))
+        letter.refresh_from_db()
+        article = letter.converted_article
+
+        self.assertRedirects(first, reverse("editor-article-edit", args=[article.pk]))
+        self.assertEqual(article.status, Article.Status.DRAFT)
+        self.assertEqual(article.body, letter.body)
+        self.assertEqual(article.author_name, "Дорогая редакция")
+        self.assertNotIn(letter.sender_name, article.body)
+        self.assertNotIn(letter.contact, article.body)
+
+        second = self.client.post(reverse("editor-letter-convert", args=[letter.pk]))
+        self.assertRedirects(second, reverse("editor-article-edit", args=[article.pk]))
+        self.assertEqual(Article.objects.count(), 1)

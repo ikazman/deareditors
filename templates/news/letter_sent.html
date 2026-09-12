@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block title %}Письмо дошло — Dear Editors{% endblock %}
+
+{% block content %}
+<section class="letter-page letter-page--sent">
+    <p class="rubric">Почта редакции</p>
+    <h1 class="letter-title">Письмо дошло.</h1>
+    <p class="letter-note">Дорогая редакция уже делает вид, что ничего не произошло.</p>
+    <a class="more" href="{% url 'article-list' %}">Вернуться к редакционной ленте</a>
+</section>
+{% endblock %}
