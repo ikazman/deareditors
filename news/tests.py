@@ -12,7 +12,7 @@ class PublishingTests(TestCase):
 
     def test_published_article_is_visible_and_has_detail_page(self):
         article = Article.objects.create(
-            title="До редакции дошёл слух",
+            title="До редакции дошел слух",
             lead="Кажется, что-то происходит.",
             body="Будем наблюдать.",
             status=Article.Status.PUBLISHED,
