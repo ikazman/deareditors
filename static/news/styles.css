@@ -36,8 +36,10 @@ a { color: inherit; }
 .entry h2 a { text-decoration: none; }
 .entry h2 a:hover,.entry h2 a:focus-visible { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .18em; text-decoration-skip-ink: auto; }
 .entry p { max-width: var(--measure); margin: .55rem 0 0; color: var(--ink-soft); }
-.more { display: inline-block; margin-top: .7rem; padding-bottom: 1px; border-bottom: 1px solid currentColor; color: var(--rubric); font-size: .8rem; letter-spacing: .03em; text-decoration: none; }
-.more:hover { border-bottom-color: transparent; }
+.more { display: inline-block; margin-top: .7rem; padding-bottom: 1px; border-bottom: 1px solid var(--rule); color: var(--ink-soft); font-size: .8rem; letter-spacing: .03em; text-decoration: none; }
+.more--primary { color: var(--rubric); border-bottom-color: currentColor; }
+.more--primary:hover { border-bottom-color: transparent; }
+.more--nav:hover { color: var(--ink); border-bottom-color: var(--ink); }
 .empty { padding: 2.5rem 0 4rem; color: var(--ink-soft); }
 
 .article { max-width: var(--read); padding: clamp(2.25rem, 5vw, 3.25rem) 0 4.5rem; }
