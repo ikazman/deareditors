@@ -27,9 +27,11 @@ jobs:
           DJANGO_SECRET_KEY: ci-production-mcp-secret-key
           DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
           DJANGO_SECURE_SSL_REDIRECT: "0"
+          DJANGO_DB_PATH: /tmp/deareditors-ci.sqlite3
           DEAR_EDITORS_MCP_API_KEY: ci-mcp-key
         run: |
           set -eu
+          rm -f "$DJANGO_DB_PATH"
           python manage.py migrate --noinput
 
           python -m uvicorn deareditors.asgi:application \
