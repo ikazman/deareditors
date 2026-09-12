@@ -69,10 +69,12 @@ a { color: inherit; }
 .colophon-link { text-decoration-color: var(--rule); text-underline-offset: 2px; }
 .colophon-link:hover { text-decoration-color: var(--ink); }
 
-.colophon { max-width: var(--page); padding-top: 1.25rem; padding-bottom: 3rem; border-top: 1px solid var(--ink); color: var(--ink-soft); font-size: .78rem; line-height: 1.5; }
+.colophon { padding-top: 0; padding-bottom: 3rem; color: var(--ink-soft); font-size: .78rem; line-height: 1.5; }
+.colophon__inner { width: min(100%, 32rem); margin-left: auto; padding-top: 1.15rem; border-top: 1px solid var(--ink); }
 
 @media (max-width: 34rem) {
     .masthead { flex-direction: column; gap: .35rem; }
     .issue { text-align: left; }
     .hero h1 { max-width: none; }
+    .colophon__inner { width: 100%; }
 }
