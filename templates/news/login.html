@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}Вход — Dear Editors{% endblock %}
+
+{% block content %}
+<section class="letter-page access-page">
+    <p class="rubric">Внутреннее издание</p>
+    <h1 class="letter-title">Вход для читателей</h1>
+    <p class="letter-note">Dear Editors распространяется по приглашениям редакции. Если у вас уже есть доступ, редакция, вероятно, знает почему.</p>
+
+    <form class="letter-form" method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="letter-errors">{{ form.non_field_errors }}</div>{% endif %}
+
+        <div class="letter-field">
+            <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+            {{ form.username }}
+            {{ form.username.errors }}
+        </div>
+
+        <div class="letter-field">
+            <label for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
+            {{ form.password }}
+            {{ form.password.errors }}
+        </div>
+
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+        <button class="letter-submit" type="submit">Войти в издание</button>
+    </form>
+</section>
+{% endblock %}
