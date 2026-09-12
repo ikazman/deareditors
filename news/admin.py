@@ -15,6 +15,6 @@ class ArticleAdmin(admin.ModelAdmin):
         ("Служебное", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
     )
 
-admin.site.site_header = "DearEditors — редакция"
-admin.site.site_title = "DearEditors"
+admin.site.site_header = "Dear Editors — редакция"
+admin.site.site_title = "Dear Editors"
 admin.site.index_title = "Редакционный стол"
