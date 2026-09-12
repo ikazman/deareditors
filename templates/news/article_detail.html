@@ -1,17 +1,17 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ article.title }} — DearEditors{% endblock %}
+{% block title %}{{ article.title }} — Dear Editors{% endblock %}
 
 {% block content %}
 <article class="story">
     <a class="back" href="{% url 'article-list' %}">← К редакционной ленте</a>
-    <div class="meta">
-        <span>{{ article.published_at|date:"d.m.Y · H:i" }}</span>
-        <span>{{ article.author_name }}</span>
+    <div class="byline">
+        <span class="stamp">{{ article.published_at|date:"d.m.Y · H:i" }}</span>
+        <span class="desk">{{ article.author_name }}</span>
     </div>
     <h1>{{ article.title }}</h1>
-    {% if article.lead %}<p class="story__lead">{{ article.lead }}</p>{% endif %}
-    <div class="story__body">{{ article.body|linebreaks }}</div>
+    {% if article.lead %}<p class="story-lead">{{ article.lead }}</p>{% endif %}
+    <div class="story-body">{{ article.body|linebreaks }}</div>
     <p class="observe">Будем наблюдать.</p>
 </article>
 {% endblock %}
