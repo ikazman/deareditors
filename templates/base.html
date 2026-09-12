@@ -19,20 +19,20 @@
 </head>
 <body>
     <header class="wrap masthead">
-        <a class="nameplate" href="{% if request.user.is_authenticated %}{% url 'article-list' %}{% else %}{% url 'login' %}{% endif %}">Dear Editors</a>
-        <div class="masthead__right">
+        <div class="masthead__primary">
+            <a class="nameplate" href="{% if request.user.is_authenticated %}{% url 'article-list' %}{% else %}{% url 'login' %}{% endif %}">Dear Editors</a>
             <div class="issue">Внутреннее издание · {% now "j E Y" %}</div>
-            {% if request.user.is_authenticated %}
-                <nav class="service-nav" aria-label="Служебная навигация">
-                    <a href="{% url 'letter-create' %}">Письмо в редакцию</a>
-                    {% if request.user.is_staff %}<a href="{% url 'editor-dashboard' %}">Редакционный стол</a>{% endif %}
-                    <form method="post" action="{% url 'logout' %}">
-                        {% csrf_token %}
-                        <button type="submit">Выйти</button>
-                    </form>
-                </nav>
-            {% endif %}
         </div>
+        {% if request.user.is_authenticated %}
+            <nav class="service-nav" aria-label="Служебная навигация">
+                <a href="{% url 'letter-create' %}">Письмо в редакцию</a>
+                {% if request.user.is_staff %}<a href="{% url 'editor-dashboard' %}">Редакционный стол</a>{% endif %}
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit">Выйти</button>
+                </form>
+            </nav>
+        {% endif %}
     </header>
 
     <main class="wrap">
@@ -45,10 +45,7 @@
     </main>
 
     <footer class="wrap colophon">
-        <div class="colophon__inner">
-            <div>Dear Editors — внутреннее издание. Слухи проверяются по мере возможности, опровергаются по мере необходимости.</div>
-            <div class="colophon-private">Распространяется по приглашениям редакции.</div>
-        </div>
+        <div class="colophon__inner">Dear Editors — внутреннее издание. Слухи проверяются по мере возможности, опровергаются по мере необходимости. Распространяется по приглашениям редакции.</div>
     </footer>
 </body>
 </html>
