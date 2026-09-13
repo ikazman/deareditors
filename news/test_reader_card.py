@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import Article, Invitation, ReaderDailyVisit, ReaderProfile
+from .models import Article, Invitation, ReaderProfile
 from .reader_profile import get_or_create_reader_profile
 
 
@@ -36,6 +36,7 @@ class ReaderCardTests(TestCase):
         self.assertEqual(second.status_code, 200)
         self.assertRegex(profile.ticket_number, r"^DE-\d{2}-\d{4}$")
         self.assertContains(first, profile.ticket_number)
+        self.assertContains(first, f"Серия {profile.ticket_number[:5]}")
         self.assertContains(first, "Анна")
         self.assertEqual(ReaderProfile.objects.filter(user=self.reader).count(), 1)
         self.assertEqual(
@@ -43,7 +44,16 @@ class ReaderCardTests(TestCase):
             profile.ticket_number,
         )
 
-    def test_reader_card_shows_reading_stats(self):
+    def test_new_reader_card_uses_non_failure_empty_states(self):
+        self.client.force_login(self.reader)
+
+        response = self.client.get(reverse("reader-card"))
+
+        self.assertContains(response, "Выдан сегодня")
+        self.assertContains(response, "Пока ни одного")
+        self.assertContains(response, "Пока без отметок. Редакция продолжает наблюдение.")
+
+    def test_reader_card_shows_reading_and_ticket_age(self):
         first_article = Article.objects.create(
             title="Первый материал",
             body="Редакция фиксирует чтение.",
@@ -54,19 +64,21 @@ class ReaderCardTests(TestCase):
             body="Повторное наблюдение.",
             status=Article.Status.PUBLISHED,
         )
+        profile = get_or_create_reader_profile(self.reader)
+        ReaderProfile.objects.filter(pk=profile.pk).update(
+            issued_at=timezone.now() - timedelta(days=104)
+        )
         self.client.force_login(self.reader)
         self.client.get(first_article.get_absolute_url())
         self.client.get(first_article.get_absolute_url())
         self.client.get(second_article.get_absolute_url())
-        ReaderDailyVisit.objects.get_or_create(
-            user=self.reader,
-            visit_date=timezone.localdate() - timedelta(days=1),
-        )
 
         response = self.client.get(reverse("reader-card"))
 
         self.assertEqual(response.context["articles_read"], 2)
-        self.assertEqual(response.context["days_visited"], 2)
+        self.assertEqual(response.context["days_with_publication"], 104)
+        self.assertFalse(response.context["issued_today"])
+        self.assertContains(response, "104")
 
     def test_accepting_invitation_issues_reader_profile(self):
         invitation = Invitation.objects.create(label="Новый читатель")
