@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from django.conf import settings
 from django.contrib.staticfiles import finders
 from django.forms import Textarea
 from django.test import SimpleTestCase
@@ -34,3 +35,15 @@ class ArticleImageEditorUITests(SimpleTestCase):
         self.assertIn("pendingImageSelection = { ...savedSelection }", javascript)
         self.assertIn("insertImageMarker(payload.marker, insertionPoint)", javascript)
         self.assertIn("imageCaption?.addEventListener(\"input\", fitImageCaption)", javascript)
+
+    def test_published_editor_actions_are_named_and_visually_grouped(self):
+        template = (Path(settings.BASE_DIR) / "templates" / "editor" / "article_form.html").read_text(encoding="utf-8")
+        css_path = finders.find("news/editor-actions.css")
+        self.assertIsNotNone(css_path)
+        css = Path(css_path).read_text(encoding="utf-8")
+
+        self.assertIn("Посмотреть черновик ↗", template)
+        self.assertIn("Открыть в издании ↗", template)
+        self.assertIn(".actions .btn--danger", css)
+        self.assertIn("margin-left:auto", css)
+        self.assertIn("flex-wrap:nowrap", css)
