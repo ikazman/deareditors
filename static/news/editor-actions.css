@@ -1,29 +1,38 @@
 .actions{
+  display:flex;
   width:min(var(--read),calc(100vw - 2 * var(--gutter)));
   max-width:none;
-  flex-wrap:nowrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:2.5rem;
+}
+
+.actions__main{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
   gap:1.2rem;
+}
+
+.actions__danger{
+  flex:0 0 auto;
 }
 
 .actions .btn{
   white-space:nowrap;
 }
 
-.actions .btn--danger{
-  flex:0 0 auto;
-  margin-left:auto;
-}
-
 @media (max-width:40rem){
   .actions{
+    display:block;
     width:100%;
-    flex-wrap:wrap;
+  }
+
+  .actions__main{
     gap:.85rem 1.1rem;
   }
 
-  .actions .btn--danger{
-    flex-basis:100%;
-    width:max-content;
-    margin:.7rem 0 0;
+  .actions__danger{
+    margin-top:1.35rem;
   }
 }
