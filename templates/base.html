@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="{% static 'news/markdown.css' %}">
     <link rel="stylesheet" href="{% static 'news/article-images.css' %}">
     <link rel="stylesheet" href="{% static 'news/access.css' %}">
+    {% block extra_head %}{% endblock %}
 </head>
 <body>
     <header class="wrap masthead">
@@ -27,6 +28,7 @@
         {% if request.user.is_authenticated %}
             <nav class="service-nav" aria-label="Служебная навигация">
                 <a href="{% url 'letter-create' %}">Письмо в редакцию</a>
+                <a href="{% url 'reader-card' %}">Читательский билет</a>
                 {% if request.user.is_staff %}<a href="{% url 'editor-dashboard' %}">Редакционный стол</a>{% endif %}
                 <form method="post" action="{% url 'logout' %}">
                     {% csrf_token %}

@@ -24,6 +24,7 @@ from .forms import (
 from .mcp_access import issue_mcp_key
 from .models import Article, ArticleImage, EditorialLetter, Invitation, MCPAccessKey, TarotCard, TarotDraw
 from .reader_activity import record_article_open, record_daily_visit
+from .reader_profile import get_or_create_reader_profile, reader_stats
 from .tarot_service import create_card_of_day, import_tarot_bundle, question_for_date, recent_draws
 
 
@@ -54,6 +55,21 @@ def article_detail(request, slug):
     )
     record_article_open(request.user, article)
     return render(request, "news/article_detail.html", {"article": article})
+
+
+@login_required
+def reader_card(request):
+    profile = get_or_create_reader_profile(request.user)
+    stats = reader_stats(request.user, profile)
+    return render(
+        request,
+        "news/reader_card.html",
+        {
+            "profile": profile,
+            "reader_name": request.user.first_name or request.user.username,
+            **stats,
+        },
+    )
 
 
 @login_required
@@ -118,6 +134,7 @@ def invite_accept(request, token):
                 invitation.accepted_at = timezone.now()
                 invitation.accepted_by = user
                 invitation.save(update_fields=["accepted_at", "accepted_by"])
+                get_or_create_reader_profile(user)
 
             auth_login(request, user)
             messages.success(request, "Приглашение принято. Редакционная лента открыта.")
