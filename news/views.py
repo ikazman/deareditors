@@ -259,6 +259,11 @@ def _editor_article_form(request, article):
             article = form.save(commit=False)
             action = request.POST.get("action", "save")
 
+            if action == "preview":
+                if article.published_at is None:
+                    article.published_at = timezone.now()
+                return render(request, "editor/article_preview.html", {"article": article})
+
             if action == "publish":
                 article.status = Article.Status.PUBLISHED
             elif action == "draft":
