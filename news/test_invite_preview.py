@@ -7,7 +7,13 @@ from django.urls import reverse
 from django.utils import timezone
 from PIL import Image
 
-from .invite_preview import INVITE_PREVIEW_ALT, INVITE_PREVIEW_SIZE, INVITE_PREVIEW_VERSION, invite_series
+from .invite_preview import (
+    INVITE_PREVIEW_ALT,
+    INVITE_PREVIEW_SIZE,
+    INVITE_PREVIEW_VERSION,
+    invite_reference,
+    invite_series,
+)
 from .models import Invitation
 
 
@@ -23,6 +29,10 @@ class InvitePreviewTests(TestCase):
             created_by=self.editor,
         )
 
+    def _preview_url(self):
+        path = reverse("invite-preview", kwargs={"token": self.invitation.token})
+        return f"{path}?v={INVITE_PREVIEW_VERSION}"
+
     def test_get_and_head_do_not_consume_invitation(self):
         url = self.invitation.get_absolute_url()
 
@@ -36,16 +46,14 @@ class InvitePreviewTests(TestCase):
         self.assertIsNone(self.invitation.accepted_by)
         self.assertTrue(self.invitation.is_active)
 
-    def test_invite_page_exposes_large_open_graph_preview_without_noindex(self):
+    def test_invite_page_exposes_messenger_open_graph_metadata(self):
         response = self.client.get(self.invitation.get_absolute_url(), secure=True)
-        preview_url = self.client.get(
-            reverse(
-                "invite-preview",
-                kwargs={"token": self.invitation.token, "version": INVITE_PREVIEW_VERSION},
-            )
-        ).request["PATH_INFO"]
+        reference = invite_reference(self.invitation)
+        preview_url = self._preview_url()
 
         self.assertContains(response, '<meta property="og:title" content="Пригласительный билет Dear Editors">', html=True)
+        self.assertContains(response, f"Билет {reference}. Действует до")
+        self.assertContains(response, '<meta property="og:image:type" content="image/png">', html=True)
         self.assertContains(response, '<meta property="og:image:width" content="1200">', html=True)
         self.assertContains(response, '<meta property="og:image:height" content="630">', html=True)
         self.assertContains(response, f'<meta property="og:image:alt" content="{INVITE_PREVIEW_ALT}">', html=True)
@@ -55,10 +63,20 @@ class InvitePreviewTests(TestCase):
         self.assertNotContains(response, 'name="robots"')
         self.assertNotContains(response, "noindex")
 
-    def test_invite_page_uses_series_and_nonduplicative_status(self):
+    def test_invite_reference_is_short_and_series_is_separate(self):
+        reference = invite_reference(self.invitation)
+
+        self.assertRegex(reference, r"^\d{2}-\d{4}$")
+        self.assertEqual(invite_series(self.invitation), "DE-I")
+        self.assertNotIn("DE-I", reference)
+
+        response = self.client.get(self.invitation.get_absolute_url())
+        self.assertContains(response, "Серия DE-I")
+        self.assertContains(response, reference)
+
+    def test_invite_page_uses_nonduplicative_status(self):
         response = self.client.get(self.invitation.get_absolute_url())
 
-        self.assertContains(response, f"Серия {invite_series(self.invitation)}")
         self.assertContains(response, "Не использовано")
         self.assertContains(response, "Действует до")
 
@@ -87,27 +105,28 @@ class InvitePreviewTests(TestCase):
         response = self.client.get(self.invitation.get_absolute_url())
         self.assertContains(response, "Истекло", status_code=410)
 
-    def test_preview_is_public_png_with_expected_dimensions(self):
-        url = reverse(
-            "invite-preview",
-            kwargs={"token": self.invitation.token, "version": INVITE_PREVIEW_VERSION},
-        )
+    def test_preview_is_direct_public_png_with_expected_dimensions_and_weight(self):
+        url = self._preview_url()
 
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "image/png")
+        self.assertEqual(response["X-Content-Type-Options"], "nosniff")
         self.assertIn("max-age=31536000", response["Cache-Control"])
+        self.assertLess(len(response.content), 500 * 1024)
         image = Image.open(BytesIO(response.content))
         self.assertEqual(image.size, INVITE_PREVIEW_SIZE)
         self.assertEqual(image.format, "PNG")
 
-    def test_old_or_unknown_preview_version_is_not_served(self):
-        url = reverse(
-            "invite-preview",
-            kwargs={"token": self.invitation.token, "version": INVITE_PREVIEW_VERSION + 1},
-        )
+    def test_preview_version_is_query_parameter_and_required(self):
+        path = reverse("invite-preview", kwargs={"token": self.invitation.token})
 
-        response = self.client.get(url)
+        missing = self.client.get(path)
+        old = self.client.get(f"{path}?v={INVITE_PREVIEW_VERSION - 1}")
+        current = self.client.get(f"{path}?v={INVITE_PREVIEW_VERSION}")
 
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(missing.status_code, 404)
+        self.assertEqual(old.status_code, 404)
+        self.assertEqual(current.status_code, 200)
+        self.assertEqual(current.redirect_chain if hasattr(current, "redirect_chain") else [], [])

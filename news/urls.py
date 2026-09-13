@@ -19,7 +19,7 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
     path("invite/<uuid:token>/", invite_views.invite_accept, name="invite-accept"),
     path(
-        "invite/<uuid:token>/preview-<int:version>.png",
+        "og/invite/<uuid:token>.png",
         invite_views.invite_preview,
         name="invite-preview",
     ),

@@ -18,6 +18,22 @@ from .models import Invitation
 from .reader_profile import get_or_create_reader_profile
 
 
+MONTHS_GENITIVE = {
+    1: "января",
+    2: "февраля",
+    3: "марта",
+    4: "апреля",
+    5: "мая",
+    6: "июня",
+    7: "июля",
+    8: "августа",
+    9: "сентября",
+    10: "октября",
+    11: "ноября",
+    12: "декабря",
+}
+
+
 def _invite_status_label(invitation) -> str:
     if invitation.accepted_at is not None:
         return "Использовано"
@@ -35,10 +51,18 @@ def _prepare_invite_form(form):
     return form
 
 
+def _invite_description(invitation) -> str:
+    expires = timezone.localtime(invitation.expires_at)
+    return (
+        f"Билет {invite_reference(invitation)}. "
+        f"Действует до {expires.day} {MONTHS_GENITIVE[expires.month]}."
+    )
+
+
 def _invite_context(request, invitation, **extra):
-    preview_path = reverse(
-        "invite-preview",
-        kwargs={"token": invitation.token, "version": INVITE_PREVIEW_VERSION},
+    preview_path = reverse("invite-preview", kwargs={"token": invitation.token})
+    preview_url = request.build_absolute_uri(
+        f"{preview_path}?v={INVITE_PREVIEW_VERSION}"
     )
     context = {
         "invitation": invitation,
@@ -46,8 +70,9 @@ def _invite_context(request, invitation, **extra):
         "invite_series": invite_series(invitation),
         "invite_status_label": _invite_status_label(invitation),
         "invite_url": request.build_absolute_uri(invitation.get_absolute_url()),
-        "invite_preview_url": request.build_absolute_uri(preview_path),
+        "invite_preview_url": preview_url,
         "invite_preview_alt": INVITE_PREVIEW_ALT,
+        "invite_description": _invite_description(invitation),
     }
     context.update(extra)
     return context
@@ -98,12 +123,14 @@ def invite_accept(request, token):
     )
 
 
-def invite_preview(request, token, version):
+def invite_preview(request, token):
     invitation = get_object_or_404(Invitation, token=token)
-    if version != INVITE_PREVIEW_VERSION:
+    if request.GET.get("v") != str(INVITE_PREVIEW_VERSION):
         raise Http404
 
-    response = HttpResponse(render_invite_preview(invitation), content_type="image/png")
+    payload = render_invite_preview(invitation)
+    response = HttpResponse(payload, content_type="image/png")
     response["Cache-Control"] = "public, max-age=31536000, immutable"
     response["Content-Disposition"] = 'inline; filename="dear-editors-invite.png"'
+    response["X-Content-Type-Options"] = "nosniff"
     return response
