@@ -158,8 +158,8 @@ document.addEventListener("DOMContentLoaded", () => {
     replace(start, end, replacement, start + 1, start + 1 + label.length);
   };
 
-  const insertImageMarker = (marker) => {
-    const { start, end } = activeSelection();
+  const insertImageMarker = (marker, selection = null) => {
+    const { start, end } = selection || activeSelection();
     const before = body.value.slice(0, start);
     const after = body.value.slice(end);
     const leading = start === 0 || before.endsWith("\n\n") ? "" : before.endsWith("\n") ? "\n" : "\n\n";
@@ -189,18 +189,30 @@ document.addEventListener("DOMContentLoaded", () => {
   const imageErrors = imageDialog?.querySelector("[data-image-errors]");
   const imagePreview = imageDialog?.querySelector("[data-image-preview]");
   const imageFile = imageUploadForm?.querySelector('input[type="file"]');
+  const imageCaption = imageUploadForm?.querySelector(".image-dialog__caption");
   let previewUrl = null;
+  let pendingImageSelection = null;
+
+  const fitImageCaption = () => {
+    if (!imageCaption) return;
+    imageCaption.style.height = "auto";
+    imageCaption.style.height = `${Math.ceil(imageCaption.scrollHeight)}px`;
+  };
 
   const openImageDialog = () => {
     if (!imageDialog) return;
+    if (document.activeElement === body) rememberSelection();
+    pendingImageSelection = { ...savedSelection };
     if (typeof imageDialog.showModal === "function") imageDialog.showModal();
     else imageDialog.setAttribute("open", "");
+    requestAnimationFrame(fitImageCaption);
   };
 
   const closeImageDialog = () => {
     if (!imageDialog) return;
     if (typeof imageDialog.close === "function") imageDialog.close();
     else imageDialog.removeAttribute("open");
+    pendingImageSelection = null;
   };
 
   const clearPreview = () => {
@@ -249,6 +261,8 @@ document.addEventListener("DOMContentLoaded", () => {
     closeImageDialog();
   });
 
+  imageCaption?.addEventListener("input", fitImageCaption);
+
   imageFile?.addEventListener("change", () => {
     clearPreview();
     const file = imageFile.files?.[0];
@@ -285,10 +299,14 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error(messages.join(" ") || "Редакция не смогла принять изображение.");
       }
 
-      closeImageDialog();
-      insertImageMarker(payload.marker);
+      const insertionPoint = pendingImageSelection ? { ...pendingImageSelection } : activeSelection();
+      if (typeof imageDialog.close === "function") imageDialog.close();
+      else imageDialog.removeAttribute("open");
+      insertImageMarker(payload.marker, insertionPoint);
+      pendingImageSelection = null;
       imageUploadForm.reset();
       clearPreview();
+      requestAnimationFrame(fitImageCaption);
     } catch (error) {
       if (imageErrors) {
         imageErrors.textContent = error.message;
