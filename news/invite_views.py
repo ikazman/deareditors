@@ -9,10 +9,12 @@ from django.utils import timezone
 from .forms import InvitationAcceptForm
 from .invite_preview import (
     INVITE_PREVIEW_ALT,
+    INVITE_PREVIEW_CONTENT_TYPE,
     INVITE_PREVIEW_VERSION,
     invite_reference,
     invite_series,
     render_invite_preview,
+    render_invite_preview_png,
 )
 from .models import Invitation
 from .reader_profile import get_or_create_reader_profile
@@ -126,9 +128,8 @@ def invite_accept(request, token):
     )
 
 
-def _preview_response(invitation):
-    payload = render_invite_preview(invitation)
-    response = HttpResponse(payload, content_type="image/png")
+def _preview_response(payload: bytes, *, content_type: str):
+    response = HttpResponse(payload, content_type=content_type)
     response["Cache-Control"] = "public, max-age=31536000, immutable"
     response["Content-Length"] = str(len(payload))
     response["X-Content-Type-Options"] = "nosniff"
@@ -139,13 +140,28 @@ def invite_preview(request, token, version):
     if version != INVITE_PREVIEW_VERSION:
         raise Http404
     invitation = get_object_or_404(Invitation, token=token)
-    return _preview_response(invitation)
+    return _preview_response(
+        render_invite_preview(invitation),
+        content_type=INVITE_PREVIEW_CONTENT_TYPE,
+    )
+
+
+def invite_preview_png_legacy(request, token, version):
+    if version != 4:
+        raise Http404
+    invitation = get_object_or_404(Invitation, token=token)
+    return _preview_response(
+        render_invite_preview_png(invitation),
+        content_type="image/png",
+    )
 
 
 def invite_preview_legacy(request, token):
-    # Keep already-issued v3 image URLs alive while new pages use a version in
-    # the path. This endpoint can go away after old messenger caches expire.
-    if request.GET.get("v") not in {"3", str(INVITE_PREVIEW_VERSION)}:
+    # Keep already-issued v3/v4 image URLs alive while v5 uses JPEG.
+    if request.GET.get("v") not in {"3", "4"}:
         raise Http404
     invitation = get_object_or_404(Invitation, token=token)
-    return _preview_response(invitation)
+    return _preview_response(
+        render_invite_preview_png(invitation),
+        content_type="image/png",
+    )

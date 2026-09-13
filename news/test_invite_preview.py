@@ -9,6 +9,7 @@ from PIL import Image
 
 from .invite_preview import (
     INVITE_PREVIEW_ALT,
+    INVITE_PREVIEW_CONTENT_TYPE,
     INVITE_PREVIEW_SIZE,
     INVITE_PREVIEW_VERSION,
     invite_reference,
@@ -62,7 +63,7 @@ class InvitePreviewTests(TestCase):
 
         self.assertContains(response, '<meta property="og:title" content="Пригласительный билет Dear Editors">', html=True)
         self.assertContains(response, f"Билет {reference}. Действует до")
-        self.assertContains(response, '<meta property="og:image:type" content="image/png">', html=True)
+        self.assertContains(response, '<meta property="og:image:type" content="image/jpeg">', html=True)
         self.assertContains(response, '<meta property="og:image:width" content="1200">', html=True)
         self.assertContains(response, '<meta property="og:image:height" content="630">', html=True)
         self.assertContains(response, f'<meta property="og:image:alt" content="{INVITE_PREVIEW_ALT}">', html=True)
@@ -141,7 +142,7 @@ class InvitePreviewTests(TestCase):
         response = self.client.get(self.invitation.get_absolute_url())
         self.assertContains(response, "Истекло", status_code=410)
 
-    def test_preview_is_direct_public_png_with_expected_dimensions_weight_and_headers(self):
+    def test_preview_is_direct_public_jpeg_with_expected_dimensions_weight_and_headers(self):
         url = self._preview_url()
 
         response = self.client.get(url)
@@ -149,31 +150,51 @@ class InvitePreviewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(head_response.status_code, 200)
-        self.assertEqual(response["Content-Type"], "image/png")
-        self.assertEqual(head_response["Content-Type"], "image/png")
+        self.assertEqual(response["Content-Type"], INVITE_PREVIEW_CONTENT_TYPE)
+        self.assertEqual(head_response["Content-Type"], INVITE_PREVIEW_CONTENT_TYPE)
         self.assertEqual(response["X-Content-Type-Options"], "nosniff")
         self.assertIn("max-age=31536000", response["Cache-Control"])
         self.assertNotIn("Location", response.headers)
         self.assertEqual(response["Content-Length"], str(len(response.content)))
         self.assertEqual(head_response["Content-Length"], str(len(response.content)))
-        self.assertLess(len(response.content), 500 * 1024)
+        self.assertLess(len(response.content), 200 * 1024)
+        self.assertTrue(response.content.startswith(b"\xff\xd8\xff"))
         image = Image.open(BytesIO(response.content))
         self.assertEqual(image.size, INVITE_PREVIEW_SIZE)
-        self.assertEqual(image.format, "PNG")
+        self.assertEqual(image.format, "JPEG")
 
-    def test_preview_version_is_in_path_and_legacy_v3_url_remains_readable(self):
+    def test_preview_version_is_in_jpeg_path_and_v4_png_urls_remain_readable(self):
         current = self.client.get(self._preview_url())
-        wrong = self.client.get(
+        wrong_jpeg = self.client.get(
             reverse(
                 "invite-preview",
                 kwargs={"token": self.invitation.token, "version": INVITE_PREVIEW_VERSION - 1},
             )
         )
+        versioned_png = self.client.get(
+            reverse(
+                "invite-preview-png-legacy",
+                kwargs={"token": self.invitation.token, "version": 4},
+            )
+        )
+        wrong_versioned_png = self.client.get(
+            reverse(
+                "invite-preview-png-legacy",
+                kwargs={"token": self.invitation.token, "version": INVITE_PREVIEW_VERSION},
+            )
+        )
         legacy_path = reverse("invite-preview-legacy", kwargs={"token": self.invitation.token})
-        legacy = self.client.get(f"{legacy_path}?v=3")
+        legacy_v3 = self.client.get(f"{legacy_path}?v=3")
+        legacy_v4 = self.client.get(f"{legacy_path}?v=4")
         missing_legacy_version = self.client.get(legacy_path)
 
         self.assertEqual(current.status_code, 200)
-        self.assertEqual(wrong.status_code, 404)
-        self.assertEqual(legacy.status_code, 200)
+        self.assertEqual(wrong_jpeg.status_code, 404)
+        self.assertEqual(versioned_png.status_code, 200)
+        self.assertEqual(versioned_png["Content-Type"], "image/png")
+        self.assertEqual(wrong_versioned_png.status_code, 404)
+        self.assertEqual(legacy_v3.status_code, 200)
+        self.assertEqual(legacy_v4.status_code, 200)
+        self.assertEqual(legacy_v3["Content-Type"], "image/png")
+        self.assertEqual(legacy_v4["Content-Type"], "image/png")
         self.assertEqual(missing_legacy_version.status_code, 404)

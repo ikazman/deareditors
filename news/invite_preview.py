@@ -5,9 +5,10 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 
-INVITE_PREVIEW_VERSION = 4
+INVITE_PREVIEW_VERSION = 5
 INVITE_PREVIEW_SIZE = (1200, 630)
 INVITE_PREVIEW_ALT = "Пригласительный билет Dear Editors"
+INVITE_PREVIEW_CONTENT_TYPE = "image/jpeg"
 
 PAPER = "#f3f0e9"
 INK = "#14110e"
@@ -91,7 +92,7 @@ def _draw_centered_spaced_text(draw, y, text: str, *, font, fill, spacing: float
     )
 
 
-def render_invite_preview(invitation) -> bytes:
+def _draw_invite_preview(invitation) -> Image.Image:
     image = Image.new("RGB", INVITE_PREVIEW_SIZE, PAPER)
     draw = ImageDraw.Draw(image)
 
@@ -167,6 +168,19 @@ def render_invite_preview(invitation) -> bytes:
         font=foot_font,
     )
 
+    return image
+
+
+def render_invite_preview(invitation) -> bytes:
+    image = _draw_invite_preview(invitation)
+    output = io.BytesIO()
+    image.save(output, format="JPEG", quality=85, optimize=True)
+    return output.getvalue()
+
+
+def render_invite_preview_png(invitation) -> bytes:
+    """Keep already-issued v3/v4 PNG URLs valid while v5 uses JPEG."""
+    image = _draw_invite_preview(invitation)
     output = io.BytesIO()
     image.save(output, format="PNG", optimize=True, compress_level=9)
     return output.getvalue()

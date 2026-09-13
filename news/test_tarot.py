@@ -1,13 +1,14 @@
 import shutil
 import tempfile
 import zipfile
-from datetime import date
+from datetime import date, datetime
 from io import BytesIO
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 from openpyxl import Workbook
 
 from .models import Article, ArticleImage, TarotCard, TarotDraw
@@ -146,6 +147,7 @@ class TarotEditorTests(TarotTestMixin, TestCase):
         draw, _ = create_card_of_day(date(2026, 9, 13))
         article = draw.article
         article.status = Article.Status.PUBLISHED
+        article.published_at = timezone.make_aware(datetime(2026, 9, 13, 12, 0))
         article.save()
 
         self.client.force_login(self.reader)
