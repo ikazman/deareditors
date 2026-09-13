@@ -5,13 +5,13 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 
-INVITE_PREVIEW_VERSION = 2
+INVITE_PREVIEW_VERSION = 3
 INVITE_PREVIEW_SIZE = (1200, 630)
-INVITE_PREVIEW_ALT = "Пригласительный билет Dear Editors. Редакция приглашает к чтению внутреннего издания."
+INVITE_PREVIEW_ALT = "Пригласительный билет Dear Editors"
 
 PAPER = "#f3f0e9"
 INK = "#14110e"
-INK_SOFT = "#575049"
+INK_SOFT = "#8a8278"
 RUBRIC = "#8e3517"
 RULE = "#c9c2b4"
 
@@ -27,13 +27,12 @@ def _invite_numbers(invitation) -> tuple[int, int]:
 
 
 def invite_series(invitation) -> str:
-    series, _ = _invite_numbers(invitation)
-    return f"DE-I-{series:02d}"
+    return "DE-I"
 
 
 def invite_reference(invitation) -> str:
     series, number = _invite_numbers(invitation)
-    return f"DE-I-{series:02d}-{number:04d}"
+    return f"{series:02d}-{number:04d}"
 
 
 def _font_candidates(*, bold: bool) -> list[Path]:
@@ -66,37 +65,108 @@ def _font(size: int, *, bold: bool = False):
         return ImageFont.load_default(size=size)
 
 
+def _spaced_width(draw, text: str, font, spacing: float) -> float:
+    if not text:
+        return 0
+    widths = [draw.textlength(char, font=font) for char in text]
+    return sum(widths) + spacing * (len(text) - 1)
+
+
+def _draw_spaced_text(draw, xy, text: str, *, font, fill, spacing: float):
+    x, y = xy
+    for char in text:
+        draw.text((x, y), char, font=font, fill=fill)
+        x += draw.textlength(char, font=font) + spacing
+
+
+def _draw_centered_spaced_text(draw, y, text: str, *, font, fill, spacing: float):
+    width = _spaced_width(draw, text, font, spacing)
+    _draw_spaced_text(
+        draw,
+        ((INVITE_PREVIEW_SIZE[0] - width) / 2, y),
+        text,
+        font=font,
+        fill=fill,
+        spacing=spacing,
+    )
+
+
 def render_invite_preview(invitation) -> bytes:
     image = Image.new("RGB", INVITE_PREVIEW_SIZE, PAPER)
     draw = ImageDraw.Draw(image)
 
-    title_font = _font(62, bold=True)
-    label_font = _font(21, bold=True)
-    serial_font = _font(72, bold=True)
-    body_font = _font(30)
-    small_font = _font(20)
+    title_font = _font(38, bold=True)
+    sub_font = _font(15)
+    series_font = _font(16, bold=True)
+    kind_font = _font(20, bold=True)
+    serial_font = _font(124, bold=True)
+    foot_font = _font(22)
 
-    draw.rectangle((62, 54, 1138, 576), outline=INK, width=3)
-    draw.rectangle((76, 68, 1124, 562), outline=RULE, width=1)
+    draw.rectangle((1, 1, 1198, 628), outline=RULE, width=2)
+    draw.rectangle((28, 28, 1171, 601), outline=INK, width=2)
 
-    draw.text((104, 92), "Dear Editors", fill=INK, font=title_font)
-    draw.text((106, 168), "ВНУТРЕННЕЕ ИЗДАНИЕ", fill=INK_SOFT, font=label_font)
-    draw.text((842, 110), f"СЕРИЯ {invite_series(invitation)}", fill=RUBRIC, font=label_font)
-
-    draw.line((104, 226, 1096, 226), fill=RULE, width=2)
-    draw.text((106, 267), "ПРИГЛАСИТЕЛЬНЫЙ БИЛЕТ", fill=RUBRIC, font=label_font)
-    draw.text((104, 306), invite_reference(invitation), fill=INK, font=serial_font)
-
-    draw.text(
-        (106, 414),
-        "Редакция приглашает к чтению внутреннего издания.",
-        fill=INK,
-        font=body_font,
+    draw.text((60, 52), "Dear Editors", fill=INK, font=title_font)
+    _draw_spaced_text(
+        draw,
+        (60, 101),
+        "ВНУТРЕННЕЕ ИЗДАНИЕ",
+        font=sub_font,
+        fill=INK_SOFT,
+        spacing=2.4,
     )
-    draw.line((104, 485, 1096, 485), fill=RULE, width=2)
-    draw.text((106, 514), "ПО ПРИГЛАШЕНИЯМ РЕДАКЦИИ", fill=INK_SOFT, font=small_font)
-    draw.text((767, 514), "Ссылка дает однократный доступ.", fill=INK_SOFT, font=small_font)
+
+    series_text = f"СЕРИЯ {invite_series(invitation)}"
+    series_width = _spaced_width(draw, series_text, series_font, 2.6)
+    _draw_spaced_text(
+        draw,
+        (1140 - series_width, 56),
+        series_text,
+        font=series_font,
+        fill=RUBRIC,
+        spacing=2.6,
+    )
+
+    _draw_centered_spaced_text(
+        draw,
+        176,
+        "ПРИГЛАСИТЕЛЬНЫЙ БИЛЕТ",
+        font=kind_font,
+        fill=RUBRIC,
+        spacing=4.4,
+    )
+
+    reference = invite_reference(invitation)
+    reference_width = draw.textlength(reference, font=serial_font)
+    mark_diameter = 22
+    mark_gap = 10
+    group_width = reference_width + mark_gap + mark_diameter
+    number_x = (INVITE_PREVIEW_SIZE[0] - group_width) / 2
+    number_y = 218
+    draw.text((number_x, number_y), reference, fill=INK, font=serial_font)
+
+    bbox = draw.textbbox((number_x, number_y), reference, font=serial_font)
+    mark_left = bbox[2] + mark_gap
+    mark_center_y = number_y + 79
+    draw.ellipse(
+        (
+            mark_left,
+            mark_center_y - mark_diameter / 2,
+            mark_left + mark_diameter,
+            mark_center_y + mark_diameter / 2,
+        ),
+        fill=RUBRIC,
+    )
+
+    expires = invitation.expires_at.astimezone()
+    footer = f"Действует до {expires:%d.%m.%Y}. Однократный доступ."
+    footer_width = draw.textlength(footer, font=foot_font)
+    draw.text(
+        ((INVITE_PREVIEW_SIZE[0] - footer_width) / 2, 540),
+        footer,
+        fill="#5a534a",
+        font=foot_font,
+    )
 
     output = io.BytesIO()
-    image.save(output, format="PNG", optimize=True)
+    image.save(output, format="PNG", optimize=True, compress_level=9)
     return output.getvalue()
