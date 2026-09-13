@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block title %}Предпросмотр: {{ article.title }} — Dear Editors{% endblock %}
+
+{% block content %}
+<div class="article-preview-note">
+    <strong>Предпросмотр</strong>
+    Материал не опубликован. Это ровно тот вид, который получит читатель после публикации.
+</div>
+<article class="article">
+    <button class="article-back article-back--button" type="button" onclick="window.close()">Закрыть предпросмотр</button>
+    {% include 'news/_article_content.html' %}
+</article>
+{% endblock %}
