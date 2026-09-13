@@ -394,6 +394,8 @@ class AchievementUnlock(models.Model):
         on_delete=models.CASCADE,
     )
     code = models.CharField("отметка", max_length=32, choices=Code.choices)
+    title = models.CharField("название при выдаче", max_length=160, editable=False)
+    description = models.TextField("основание при выдаче", editable=False)
     unlocked_at = models.DateTimeField("зафиксировано", default=timezone.now)
 
     class Meta:
@@ -408,22 +410,4 @@ class AchievementUnlock(models.Model):
         verbose_name_plural = "отметки редакции"
 
     def __str__(self):
-        return f"{self.get_code_display()} — {self.user}"
-
-    @property
-    def title(self):
-        return self.get_code_display()
-
-    @property
-    def description(self):
-        descriptions = {
-            self.Code.CORRESPONDENT_III: "Письмо предъявителя использовано редакцией.",
-            self.Code.CORRESPONDENT_II: "Использовано третье письмо предъявителя.",
-            self.Code.CORRESPONDENT_I: "Использовано десятое письмо предъявителя.",
-            self.Code.PERMANENT_READER: "Прочитано пятьдесят материалов.",
-            self.Code.ANONYMOUS_SOURCE: "Письмо предъявителя стало заметкой без раскрытия источника.",
-            self.Code.COMPLETE_MONTH: "Прочитаны все материалы, вышедшие за календарный месяц.",
-            self.Code.ARCHIVE_READER: "Открыт материал старше трех месяцев.",
-            self.Code.CARD_DAY_SUBSCRIBER: "Прочитано тридцать выпусков рубрики «Карта дня».",
-        }
-        return descriptions[self.code]
+        return f"{self.title} — {self.user}"
