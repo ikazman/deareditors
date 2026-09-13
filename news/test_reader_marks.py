@@ -1,4 +1,5 @@
 from datetime import datetime, time, timedelta
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -7,6 +8,7 @@ from django.utils import timezone
 
 from .models import AchievementUnlock, Article, EditorialLetter, ReaderArticleView
 from .reader_identity import reader_fingerprint
+from .reader_marks import MARK_DEFINITIONS, sync_reader_marks
 
 
 class ReaderMarksTests(TestCase):
@@ -75,6 +77,8 @@ class ReaderMarksTests(TestCase):
             code=AchievementUnlock.Code.CORRESPONDENT_III,
         )
         self.assertEqual(mark.unlocked_at, article.published_at)
+        self.assertEqual(mark.title, "Корреспондент III степени")
+        self.assertEqual(mark.description, "Письмо предъявителя использовано редакцией.")
         self.assertContains(response, "Корреспондент III степени")
         self.assertContains(response, "Письмо предъявителя использовано редакцией.")
         self.assertFalse(
@@ -83,6 +87,38 @@ class ReaderMarksTests(TestCase):
                 code=AchievementUnlock.Code.CORRESPONDENT_II,
             ).exists()
         )
+
+    def test_awarded_mark_keeps_historical_wording_when_rule_changes(self):
+        article = self._published_article("Материал для протокола")
+        EditorialLetter.objects.create(
+            body="Слух для протокола",
+            sender_fingerprint=reader_fingerprint(self.reader),
+            converted_article=article,
+        )
+        sync_reader_marks(self.reader)
+        mark = AchievementUnlock.objects.get(
+            user=self.reader,
+            code=AchievementUnlock.Code.CORRESPONDENT_III,
+        )
+        original_title = mark.title
+        original_description = mark.description
+        original_unlocked_at = mark.unlocked_at
+
+        with patch.dict(
+            MARK_DEFINITIONS,
+            {
+                AchievementUnlock.Code.CORRESPONDENT_III: (
+                    "Новое название правила",
+                    "Новое основание правила.",
+                )
+            },
+        ):
+            sync_reader_marks(self.reader)
+
+        mark.refresh_from_db()
+        self.assertEqual(mark.title, original_title)
+        self.assertEqual(mark.description, original_description)
+        self.assertEqual(mark.unlocked_at, original_unlocked_at)
 
     def test_third_used_letter_awards_second_degree(self):
         fingerprint = reader_fingerprint(self.reader)
