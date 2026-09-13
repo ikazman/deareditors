@@ -1,8 +1,9 @@
 import secrets
 
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 
-from .models import ReaderArticleView, ReaderDailyVisit, ReaderProfile
+from .models import ReaderArticleView, ReaderProfile
 
 
 TICKET_ATTEMPTS = 32
@@ -32,8 +33,11 @@ def get_or_create_reader_profile(user):
     raise RuntimeError("Не удалось выдать уникальный номер читательского билета.")
 
 
-def reader_stats(user):
+def reader_stats(user, profile):
+    issued_date = timezone.localdate(profile.issued_at)
+    today = timezone.localdate()
     return {
         "articles_read": ReaderArticleView.objects.filter(user=user).count(),
-        "days_visited": ReaderDailyVisit.objects.filter(user=user).count(),
+        "days_with_publication": max((today - issued_date).days, 0),
+        "issued_today": issued_date == today,
     }
