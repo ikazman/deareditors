@@ -3,16 +3,16 @@ from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.db import DatabaseError, connection, transaction
-from django.http import JsonResponse
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .auth import editor_required
 from .editorial_service import create_or_update_draft_from_letter
-from .forms import ArticleForm, EditorialLetterForm, InvitationAcceptForm, InvitationForm, MCPKeyForm
+from .forms import ArticleForm, ArticleImageForm, EditorialLetterForm, InvitationAcceptForm, InvitationForm, MCPKeyForm
 from .mcp_access import issue_mcp_key
-from .models import Article, EditorialLetter, Invitation, MCPAccessKey
+from .models import Article, ArticleImage, EditorialLetter, Invitation, MCPAccessKey
 
 
 def health(request):
@@ -40,6 +40,25 @@ def article_detail(request, slug):
         published_at__isnull=False,
     )
     return render(request, "news/article_detail.html", {"article": article})
+
+
+@login_required
+def article_image(request, pk):
+    image = get_object_or_404(ArticleImage.objects.select_related("article"), pk=pk)
+    article = image.article
+    is_published = article.status == Article.Status.PUBLISHED and article.published_at is not None
+    if not is_published and not request.user.is_staff:
+        raise Http404
+
+    try:
+        handle = image.file.open("rb")
+    except (FileNotFoundError, OSError):
+        raise Http404 from None
+
+    response = FileResponse(handle, content_type=image.content_type)
+    response["Cache-Control"] = "private, no-store"
+    response["Content-Disposition"] = f'inline; filename="{image.pk}"'
+    return response
 
 
 @login_required
@@ -209,12 +228,41 @@ def editor_article_edit(request, pk):
     return _editor_article_form(request, article)
 
 
+@editor_required
+@require_POST
+def editor_article_image_upload(request, pk):
+    article = get_object_or_404(Article, pk=pk)
+    form = ArticleImageForm(request.POST, request.FILES)
+    if not form.is_valid():
+        return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+
+    image = form.save(commit=False)
+    image.article = article
+    image.save()
+    return JsonResponse(
+        {
+            "id": str(image.pk),
+            "marker": image.marker,
+            "url": image.get_absolute_url(),
+            "caption": image.caption,
+            "layout": image.layout,
+            "layout_label": image.get_layout_display(),
+        },
+        status=201,
+    )
+
+
 def _editor_article_form(request, article):
     if request.method == "POST":
         form = ArticleForm(request.POST, instance=article)
         if form.is_valid():
             article = form.save(commit=False)
             action = request.POST.get("action", "save")
+
+            if action == "preview":
+                if article.published_at is None:
+                    article.published_at = timezone.now()
+                return render(request, "editor/article_preview.html", {"article": article})
 
             if action == "publish":
                 article.status = Article.Status.PUBLISHED
@@ -231,7 +279,17 @@ def _editor_article_form(request, article):
     else:
         form = ArticleForm(instance=article)
 
-    return render(request, "editor/article_form.html", {"form": form, "article": article})
+    images = article.images.all() if article.pk else ()
+    return render(
+        request,
+        "editor/article_form.html",
+        {
+            "form": form,
+            "article": article,
+            "image_form": ArticleImageForm(),
+            "images": images,
+        },
+    )
 
 
 @login_required

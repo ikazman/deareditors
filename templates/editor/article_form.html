@@ -74,10 +74,38 @@
                     <path d="M9.4 14.6 7.5 16.5a3.5 3.5 0 0 1-5-5l3-3a3.5 3.5 0 0 1 5 0M14.6 9.4l1.9-1.9a3.5 3.5 0 1 1 5 5l-3 3a3.5 3.5 0 0 1-5 0M8.5 15.5l7-7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path>
                 </svg>
             </button>
+            <span class="editor-toolbar__rule" aria-hidden="true"></span>
+            <button class="editor-tool editor-tool--wide" type="button" {% if article.pk %}data-image-open{% else %}disabled{% endif %} aria-label="Изображение" title="{% if article.pk %}Вставить изображение{% else %}Сначала сохраните черновик{% endif %}">
+                <span class="editor-tool__label">Фото</span>
+                <svg class="editor-tool__mobile editor-tool__icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="16" rx="0" fill="none" stroke="currentColor" stroke-width="1.6"></rect>
+                    <circle cx="8" cy="9" r="1.5" fill="currentColor"></circle>
+                    <path d="m5 18 5-5 3 3 2.5-2.5L19 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+            </button>
         </div>
         {{ form.body }}
-        <span class="field__hint">Жирный, курсив, списки и ссылки. Финальное «Будем наблюдать.» издание добавит само.</span>
+        <span class="field__hint">Жирный, курсив, списки, ссылки и изображения. Финальное «Будем наблюдать.» издание добавит само.</span>
+        {% if not article.pk %}<span class="field__hint">Чтобы добавить изображение, сначала сохраните материал как черновик.</span>{% endif %}
         {{ form.body.errors }}
+
+        {% if article.pk and images %}
+            <details class="editor-image-library">
+                <summary>Изображения материала · {{ images|length }}</summary>
+                <div class="editor-image-library__list">
+                    {% for image in images %}
+                        <div class="editor-image-library__item">
+                            <img src="{{ image.get_absolute_url }}" alt="{{ image.alt_text }}">
+                            <div class="editor-image-library__copy">
+                                <span>{{ image.caption|default:"Без подписи" }}</span>
+                                <small>Фото {{ image.marker_index }} · {{ image.get_layout_display }}</small>
+                            </div>
+                            <button type="button" data-image-marker="{{ image.marker }}">Вставить</button>
+                        </div>
+                    {% endfor %}
+                </div>
+            </details>
+        {% endif %}
     </div>
 
     <div class="field">
@@ -88,13 +116,73 @@
 
     <div class="actions">
         {% if article.pk and article.status == 'published' %}
-            <button class="btn" type="submit" name="action" value="save">Сохранить изменения</button>
-            <a class="btn btn--quiet" href="{{ article.get_absolute_url }}" target="_blank">Открыть заметку</a>
-            <button class="btn btn--danger" type="submit" name="action" value="draft">Снять с публикации</button>
+            <div class="actions__main">
+                <button class="btn" type="submit" name="action" value="save">Сохранить изменения</button>
+                <button class="btn btn--quiet" type="submit" name="action" value="preview" formtarget="_blank">Посмотреть черновик ↗</button>
+                <a class="btn btn--quiet" href="{{ article.get_absolute_url }}" target="_blank">Открыть в издании ↗</a>
+            </div>
+            <div class="actions__danger">
+                <button class="btn btn--danger" type="submit" name="action" value="draft">Снять с публикации</button>
+            </div>
         {% else %}
-            <button class="btn" type="submit" name="action" value="publish">Опубликовать</button>
-            <button class="btn btn--quiet" type="submit" name="action" value="draft">Сохранить черновик</button>
+            <div class="actions__main">
+                <button class="btn" type="submit" name="action" value="publish">Опубликовать</button>
+                <button class="btn btn--quiet" type="submit" name="action" value="preview" formtarget="_blank">Посмотреть черновик ↗</button>
+                <button class="btn btn--quiet" type="submit" name="action" value="draft">Сохранить черновик</button>
+            </div>
         {% endif %}
     </div>
 </form>
+
+{% if article.pk %}
+<dialog class="image-dialog" id="image-dialog" aria-labelledby="image-dialog-title">
+    <form id="image-upload-form" method="post" enctype="multipart/form-data" data-upload-url="{% url 'editor-article-image-upload' article.pk %}">
+        {% csrf_token %}
+        <div class="image-dialog__head">
+            <div>
+                <p class="rubric">Иллюстрация</p>
+                <h2 id="image-dialog-title">Вставить изображение</h2>
+            </div>
+            <button type="button" class="image-dialog__close" data-image-close aria-label="Закрыть">×</button>
+        </div>
+
+        <div class="image-dialog__body">
+            <div class="image-dialog__field">
+                <label for="{{ image_form.file.id_for_label }}">Файл</label>
+                {{ image_form.file }}
+                <img class="image-dialog__preview" data-image-preview alt="" hidden>
+                <span class="image-dialog__hint">JPEG, PNG, WebP или GIF · до 12 МБ.</span>
+            </div>
+
+            <div class="image-dialog__field">
+                <label for="{{ image_form.caption.id_for_label }}">Подпись</label>
+                {{ image_form.caption }}
+                <span class="image-dialog__hint">Необязательно. Но редакция считает подписи самостоятельным жанром.</span>
+            </div>
+
+            <div class="image-dialog__field">
+                <label for="{{ image_form.alt_text.id_for_label }}">Описание изображения</label>
+                {{ image_form.alt_text }}
+                <span class="image-dialog__hint">Короткий alt-текст для тех, кто не видит изображение.</span>
+            </div>
+
+            <fieldset class="image-dialog__layout">
+                <legend>Ширина</legend>
+                <div class="image-dialog__choices">
+                    {% for radio in image_form.layout %}
+                        <label class="image-dialog__choice">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+
+            <div class="image-dialog__errors" data-image-errors role="alert" hidden></div>
+        </div>
+
+        <div class="image-dialog__actions">
+            <button class="btn" type="submit">Вставить в текст</button>
+            <button class="btn btn--quiet" type="button" data-image-close>Отмена</button>
+        </div>
+    </form>
+</dialog>
+{% endif %}
 {% endblock %}

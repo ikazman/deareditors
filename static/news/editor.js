@@ -158,6 +158,17 @@ document.addEventListener("DOMContentLoaded", () => {
     replace(start, end, replacement, start + 1, start + 1 + label.length);
   };
 
+  const insertImageMarker = (marker, selection = null) => {
+    const { start, end } = selection || activeSelection();
+    const before = body.value.slice(0, start);
+    const after = body.value.slice(end);
+    const leading = start === 0 || before.endsWith("\n\n") ? "" : before.endsWith("\n") ? "\n" : "\n\n";
+    const trailing = end === body.value.length || after.startsWith("\n\n") ? "" : after.startsWith("\n") ? "\n" : "\n\n";
+    const replacement = `${leading}${marker}${trailing}`;
+    const cursor = start + replacement.length;
+    replace(start, end, replacement, cursor, cursor);
+  };
+
   const run = (command) => {
     if (command === "bold") wrapSelection("**", "**", "жирный текст");
     if (command === "italic") wrapSelection("*", "*", "курсив");
@@ -173,18 +184,137 @@ document.addEventListener("DOMContentLoaded", () => {
     if (document.activeElement === body) rememberSelection();
   });
 
+  const imageDialog = document.querySelector("#image-dialog");
+  const imageUploadForm = document.querySelector("#image-upload-form");
+  const imageErrors = imageDialog?.querySelector("[data-image-errors]");
+  const imagePreview = imageDialog?.querySelector("[data-image-preview]");
+  const imageFile = imageUploadForm?.querySelector('input[type="file"]');
+  const imageCaption = imageUploadForm?.querySelector(".image-dialog__caption");
+  let previewUrl = null;
+  let pendingImageSelection = null;
+
+  const fitImageCaption = () => {
+    if (!imageCaption) return;
+    imageCaption.style.height = "auto";
+    imageCaption.style.height = `${Math.ceil(imageCaption.scrollHeight)}px`;
+  };
+
+  const openImageDialog = () => {
+    if (!imageDialog) return;
+    if (document.activeElement === body) rememberSelection();
+    pendingImageSelection = { ...savedSelection };
+    if (typeof imageDialog.showModal === "function") imageDialog.showModal();
+    else imageDialog.setAttribute("open", "");
+    requestAnimationFrame(fitImageCaption);
+  };
+
+  const closeImageDialog = () => {
+    if (!imageDialog) return;
+    if (typeof imageDialog.close === "function") imageDialog.close();
+    else imageDialog.removeAttribute("open");
+    pendingImageSelection = null;
+  };
+
+  const clearPreview = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = null;
+    if (imagePreview) {
+      imagePreview.removeAttribute("src");
+      imagePreview.hidden = true;
+    }
+  };
+
   toolbar.addEventListener("pointerdown", (event) => {
-    const button = event.target.closest("[data-md-command]");
+    const button = event.target.closest("[data-md-command], [data-image-open]");
     if (!button) return;
     rememberSelection();
     event.preventDefault();
   });
 
   toolbar.addEventListener("click", (event) => {
+    const imageButton = event.target.closest("[data-image-open]");
+    if (imageButton) {
+      event.preventDefault();
+      openImageDialog();
+      return;
+    }
+
     const button = event.target.closest("[data-md-command]");
     if (!button) return;
     event.preventDefault();
     run(button.dataset.mdCommand);
+  });
+
+  document.querySelectorAll("[data-image-marker]").forEach((button) => {
+    button.addEventListener("pointerdown", () => {
+      if (document.activeElement === body) rememberSelection();
+    });
+    button.addEventListener("click", () => insertImageMarker(button.dataset.imageMarker));
+  });
+
+  imageDialog?.querySelectorAll("[data-image-close]").forEach((button) => {
+    button.addEventListener("click", () => closeImageDialog());
+  });
+
+  imageDialog?.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeImageDialog();
+  });
+
+  imageCaption?.addEventListener("input", fitImageCaption);
+
+  imageFile?.addEventListener("change", () => {
+    clearPreview();
+    const file = imageFile.files?.[0];
+    if (!file || !imagePreview) return;
+    previewUrl = URL.createObjectURL(file);
+    imagePreview.src = previewUrl;
+    imagePreview.hidden = false;
+  });
+
+  imageUploadForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (imageErrors) {
+      imageErrors.hidden = true;
+      imageErrors.textContent = "";
+    }
+
+    const submit = imageUploadForm.querySelector('button[type="submit"]');
+    if (submit) submit.disabled = true;
+
+    try {
+      const response = await fetch(imageUploadForm.dataset.uploadUrl, {
+        method: "POST",
+        body: new FormData(imageUploadForm),
+        credentials: "same-origin",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        const messages = Object.values(payload.errors || {})
+          .flat()
+          .map((item) => item.message)
+          .filter(Boolean);
+        throw new Error(messages.join(" ") || "Редакция не смогла принять изображение.");
+      }
+
+      const insertionPoint = pendingImageSelection ? { ...pendingImageSelection } : activeSelection();
+      if (typeof imageDialog.close === "function") imageDialog.close();
+      else imageDialog.removeAttribute("open");
+      insertImageMarker(payload.marker, insertionPoint);
+      pendingImageSelection = null;
+      imageUploadForm.reset();
+      clearPreview();
+      requestAnimationFrame(fitImageCaption);
+    } catch (error) {
+      if (imageErrors) {
+        imageErrors.textContent = error.message;
+        imageErrors.hidden = false;
+      }
+    } finally {
+      if (submit) submit.disabled = false;
+    }
   });
 
   body.addEventListener("keydown", (event) => {

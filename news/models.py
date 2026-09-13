@@ -3,6 +3,8 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.db import models
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
@@ -10,6 +12,16 @@ from django.utils.text import slugify
 
 def default_invite_expiry():
     return timezone.now() + timedelta(days=7)
+
+
+def article_image_upload_path(instance, filename):
+    extension = {
+        "image/jpeg": ".jpg",
+        "image/png": ".png",
+        "image/webp": ".webp",
+        "image/gif": ".gif",
+    }.get(instance.content_type, ".img")
+    return f"article-images/{instance.article_id}/{uuid.uuid4().hex}{extension}"
 
 
 class Article(models.Model):
@@ -54,6 +66,65 @@ class Article(models.Model):
 
     def get_absolute_url(self):
         return reverse("article-detail", kwargs={"slug": self.slug})
+
+
+class ArticleImage(models.Model):
+    class Layout(models.TextChoices):
+        MEASURE = "measure", "В колонку"
+        WIDE = "wide", "Шире текста"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    article = models.ForeignKey(
+        Article,
+        verbose_name="материал",
+        related_name="images",
+        on_delete=models.CASCADE,
+    )
+    marker_index = models.PositiveIntegerField("номер в тексте", editable=False)
+    file = models.FileField("изображение", upload_to=article_image_upload_path, max_length=255)
+    caption = models.CharField("подпись", max_length=500, blank=True)
+    alt_text = models.CharField("описание", max_length=240)
+    layout = models.CharField("ширина", max_length=12, choices=Layout.choices, default=Layout.MEASURE)
+    content_type = models.CharField("тип файла", max_length=32, editable=False)
+    created_at = models.DateTimeField("загружено", auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=("article", "marker_index"),
+                name="unique_article_image_marker_index",
+            )
+        ]
+        verbose_name = "изображение материала"
+        verbose_name_plural = "изображения материала"
+
+    def __str__(self):
+        return self.caption or f"Изображение {self.marker_index}"
+
+    def save(self, *args, **kwargs):
+        if self.marker_index is None:
+            current_max = (
+                ArticleImage.objects.filter(article_id=self.article_id).aggregate(
+                    max_index=models.Max("marker_index")
+                )["max_index"]
+                or 0
+            )
+            self.marker_index = current_max + 1
+        super().save(*args, **kwargs)
+
+    @property
+    def marker(self):
+        return f"[[фото {self.marker_index}]]"
+
+    def get_absolute_url(self):
+        return reverse("article-image", kwargs={"pk": self.pk})
+
+
+@receiver(post_delete, sender=ArticleImage)
+def delete_article_image_file(sender, instance, **kwargs):
+    if instance.file:
+        instance.file.storage.delete(instance.file.name)
 
 
 class EditorialLetter(models.Model):
