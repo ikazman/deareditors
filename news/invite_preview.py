@@ -5,7 +5,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 
-INVITE_PREVIEW_VERSION = 3
+INVITE_PREVIEW_VERSION = 4
 INVITE_PREVIEW_SIZE = (1200, 630)
 INVITE_PREVIEW_ALT = "Пригласительный билет Dear Editors"
 
