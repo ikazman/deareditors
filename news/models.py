@@ -199,6 +199,14 @@ class EditorialLetter(models.Model):
     body = models.TextField("сообщение")
     sender_name = models.CharField("имя", max_length=120, blank=True)
     contact = models.CharField("контакт", max_length=240, blank=True)
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name="отправитель",
+        related_name="editorial_letters",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+    )
     status = models.CharField("статус", max_length=12, choices=Status.choices, default=Status.NEW)
     created_at = models.DateTimeField("получено", auto_now_add=True)
     reviewed_at = models.DateTimeField("просмотрено", blank=True, null=True)
@@ -367,3 +375,44 @@ class ReaderProfile(models.Model):
 
     def __str__(self):
         return f"{self.ticket_number} — {self.user}"
+
+
+class AchievementUnlock(models.Model):
+    class Code(models.TextChoices):
+        CORRESPONDENT_III = "correspondent_iii", "Корреспондент III степени"
+        CORRESPONDENT_II = "correspondent_ii", "Корреспондент II степени"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name="читатель",
+        related_name="reader_marks",
+        on_delete=models.CASCADE,
+    )
+    code = models.CharField("отметка", max_length=32, choices=Code.choices)
+    unlocked_at = models.DateTimeField("зафиксировано", default=timezone.now)
+
+    class Meta:
+        ordering = ["unlocked_at", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=("user", "code"),
+                name="unique_reader_achievement_unlock",
+            )
+        ]
+        verbose_name = "отметка редакции"
+        verbose_name_plural = "отметки редакции"
+
+    def __str__(self):
+        return f"{self.get_code_display()} — {self.user}"
+
+    @property
+    def title(self):
+        return self.get_code_display()
+
+    @property
+    def description(self):
+        descriptions = {
+            self.Code.CORRESPONDENT_III: "Письмо предъявителя использовано редакцией.",
+            self.Code.CORRESPONDENT_II: "Использовано третье письмо предъявителя.",
+        }
+        return descriptions[self.code]
