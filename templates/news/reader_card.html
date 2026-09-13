@@ -56,7 +56,21 @@
 
     <section class="reader-card-marks" aria-labelledby="reader-marks-title">
         <p class="reader-card-page__rubric" id="reader-marks-title">Отметки редакции</p>
-        <p>Пока без отметок. Редакция продолжает наблюдение.</p>
+        {% if marks %}
+            <div class="reader-card-marks__list">
+                {% for mark in marks %}
+                    <article class="reader-card-mark">
+                        <div class="reader-card-mark__head">
+                            <h2>{{ mark.title }}</h2>
+                            <time datetime="{{ mark.unlocked_at|date:'Y-m-d' }}">{{ mark.unlocked_at|date:"d.m.Y" }}</time>
+                        </div>
+                        <p>{{ mark.description }}</p>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>Пока без отметок. Редакция продолжает наблюдение.</p>
+        {% endif %}
     </section>
 </section>
 {% endblock %}
