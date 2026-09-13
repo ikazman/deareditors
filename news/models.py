@@ -379,6 +379,8 @@ class AchievementUnlock(models.Model):
     class Code(models.TextChoices):
         CORRESPONDENT_III = "correspondent_iii", "Корреспондент III степени"
         CORRESPONDENT_II = "correspondent_ii", "Корреспондент II степени"
+        CORRESPONDENT_I = "correspondent_i", "Корреспондент I степени"
+        PERMANENT_READER = "permanent_reader", "Постоянный читатель"
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -412,5 +414,7 @@ class AchievementUnlock(models.Model):
         descriptions = {
             self.Code.CORRESPONDENT_III: "Письмо предъявителя использовано редакцией.",
             self.Code.CORRESPONDENT_II: "Использовано третье письмо предъявителя.",
+            self.Code.CORRESPONDENT_I: "Использовано десятое письмо предъявителя.",
+            self.Code.PERMANENT_READER: "Прочитано пятьдесят материалов.",
         }
         return descriptions[self.code]
