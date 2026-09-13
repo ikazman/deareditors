@@ -32,7 +32,9 @@ markdown.disable(
     ]
 )
 
-IMAGE_MARKER_RE = re.compile(r"(?m)^[ \t]*\[\[image:([0-9a-fA-F-]{36})\]\][ \t]*$")
+IMAGE_MARKER_RE = re.compile(
+    r"(?m)^[ \t]*\[\[(?:фото[ \t]+(?P<index>[1-9]\d*)|image:(?P<uuid>[0-9a-fA-F-]{36}))\]\][ \t]*$"
+)
 
 
 def _render_figure(image):
@@ -60,15 +62,24 @@ def editorial_markdown(value):
 def editorial_article(article):
     """Render editorial Markdown plus image markers that belong to this article."""
     body = article.body or ""
-    images = {str(image.pk): image for image in article.images.all()} if article.pk else {}
+    article_images = list(article.images.all()) if article.pk else []
+    images_by_index = {str(image.marker_index): image for image in article_images}
+    images_by_uuid = {str(image.pk): image for image in article_images}
     parts = []
     cursor = 0
 
     for match in IMAGE_MARKER_RE.finditer(body):
         parts.append(markdown.render(body[cursor:match.start()]))
-        image = images.get(match.group(1))
+        image = None
+        if match.group("index"):
+            image = images_by_index.get(match.group("index"))
+        elif match.group("uuid"):
+            image = images_by_uuid.get(match.group("uuid"))
+
         if image is not None:
             parts.append(str(_render_figure(image)))
+        else:
+            parts.append(markdown.render(match.group(0)))
         cursor = match.end()
 
     parts.append(markdown.render(body[cursor:]))
