@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 
 {% block title %}Пригласительный билет — Dear Editors{% endblock %}
+{% block robots %}{% endblock %}
 
 {% block extra_head %}
     <meta property="og:type" content="website">
@@ -9,6 +10,7 @@
     <meta property="og:description" content="Редакция приглашает к чтению внутреннего издания Dear Editors.">
     <meta property="og:url" content="{{ invite_url }}">
     <meta property="og:image" content="{{ invite_preview_url }}">
+    <meta property="og:image:secure_url" content="{{ invite_preview_url }}">
     <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -33,7 +35,7 @@
                     <strong class="invite-ticket__name">Dear Editors</strong>
                     <span class="invite-ticket__sub">Внутреннее издание</span>
                 </div>
-                <span class="invite-ticket__rubric">Приглашение редакции</span>
+                <span class="invite-ticket__rubric">Серия {{ invite_series }}</span>
             </div>
 
             <div class="invite-ticket__serial-label">Номер</div>
@@ -42,7 +44,7 @@
             <div class="invite-ticket__details">
                 <div>
                     <span>Статус</span>
-                    <strong>{% if invite_invalid %}Не действует{% else %}Действует{% endif %}</strong>
+                    <strong>{{ invite_status_label }}</strong>
                 </div>
                 <div>
                     <span>Действует до</span>
@@ -78,6 +80,7 @@
             <div class="letter-field">
                 <label for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>
                 {{ form.first_name }}
+                <span class="helptext">Если не заполнить, редакция будет обращаться «предъявитель».</span>
                 {{ form.first_name.errors }}
             </div>
             <div class="letter-field">
