@@ -19,6 +19,7 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
     path("invite/<uuid:token>/", views.invite_accept, name="invite-accept"),
     path("", views.article_list, name="article-list"),
+    path("reader-card/", views.reader_card, name="reader-card"),
     path("letter/", views.letter_create, name="letter-create"),
     path("letter/sent/", views.letter_sent, name="letter-sent"),
     path("images/<uuid:pk>/", views.article_image, name="article-image"),
