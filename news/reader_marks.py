@@ -1,4 +1,5 @@
 from .models import AchievementUnlock, Article, EditorialLetter
+from .reader_identity import reader_fingerprint
 
 
 CORRESPONDENT_RULES = (
@@ -8,9 +9,10 @@ CORRESPONDENT_RULES = (
 
 
 def _used_letters(user):
+    fingerprint = reader_fingerprint(user)
     return list(
         EditorialLetter.objects.filter(
-            submitted_by=user,
+            sender_fingerprint=fingerprint,
             converted_article__status=Article.Status.PUBLISHED,
             converted_article__published_at__isnull=False,
         )
