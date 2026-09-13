@@ -39,6 +39,8 @@ class Migration(migrations.Migration):
                         choices=[
                             ("correspondent_iii", "Корреспондент III степени"),
                             ("correspondent_ii", "Корреспондент II степени"),
+                            ("correspondent_i", "Корреспондент I степени"),
+                            ("permanent_reader", "Постоянный читатель"),
                         ],
                         max_length=32,
                         verbose_name="отметка",
