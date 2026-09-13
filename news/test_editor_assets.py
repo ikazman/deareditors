@@ -17,9 +17,10 @@ class EditorAssetRegressionTests(SimpleTestCase):
         self.assertIn("event.preventDefault();", javascript)
         self.assertIn("preventScroll", javascript)
 
-    def test_formatting_does_not_force_full_autogrow_remeasure(self):
+    def test_autogrow_only_shrinks_after_deletion(self):
         javascript = self._read_static("news/editor.js")
 
         self.assertIn("valueShrank", javascript)
         self.assertIn("contentOverflows", javascript)
-        self.assertNotIn('textarea.style.height = "auto";\n      const nextHeight', javascript)
+        self.assertIn("else if (valueShrank || deletion)", javascript)
+        self.assertIn("shrinkToContent();", javascript)
