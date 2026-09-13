@@ -2,11 +2,10 @@ import hashlib
 import io
 from pathlib import Path
 
-from django.conf import settings
 from PIL import Image, ImageDraw, ImageFont
 
 
-INVITE_PREVIEW_VERSION = 1
+INVITE_PREVIEW_VERSION = 2
 INVITE_PREVIEW_SIZE = (1200, 630)
 INVITE_PREVIEW_ALT = "Пригласительный билет Dear Editors. Редакция приглашает к чтению внутреннего издания."
 
@@ -17,15 +16,23 @@ RUBRIC = "#8e3517"
 RULE = "#c9c2b4"
 
 
-def invite_reference(invitation) -> str:
+def _invite_numbers(invitation) -> tuple[int, int]:
     digest = hashlib.blake2s(
         invitation.token.bytes,
         digest_size=4,
         person=b"de-inv",
     ).digest()
     value = int.from_bytes(digest, "big")
-    series = value % 100
-    number = (value // 100) % 10_000
+    return value % 100, (value // 100) % 10_000
+
+
+def invite_series(invitation) -> str:
+    series, _ = _invite_numbers(invitation)
+    return f"DE-I-{series:02d}"
+
+
+def invite_reference(invitation) -> str:
+    series, number = _invite_numbers(invitation)
     return f"DE-I-{series:02d}-{number:04d}"
 
 
@@ -52,7 +59,6 @@ def _font(size: int, *, bold: bool = False):
         if candidate.exists():
             return ImageFont.truetype(str(candidate), size=size)
 
-    # Pillow can resolve the DejaVu family by name on most development systems.
     fallback_name = "DejaVuSerif-Bold.ttf" if bold else "DejaVuSerif.ttf"
     try:
         return ImageFont.truetype(fallback_name, size=size)
@@ -75,7 +81,7 @@ def render_invite_preview(invitation) -> bytes:
 
     draw.text((104, 92), "Dear Editors", fill=INK, font=title_font)
     draw.text((106, 168), "ВНУТРЕННЕЕ ИЗДАНИЕ", fill=INK_SOFT, font=label_font)
-    draw.text((778, 110), "ПРИГЛАШЕНИЕ РЕДАКЦИИ", fill=RUBRIC, font=label_font)
+    draw.text((842, 110), f"СЕРИЯ {invite_series(invitation)}", fill=RUBRIC, font=label_font)
 
     draw.line((104, 226, 1096, 226), fill=RULE, width=2)
     draw.text((106, 267), "ПРИГЛАСИТЕЛЬНЫЙ БИЛЕТ", fill=RUBRIC, font=label_font)

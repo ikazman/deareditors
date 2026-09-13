@@ -11,10 +11,28 @@ from .invite_preview import (
     INVITE_PREVIEW_ALT,
     INVITE_PREVIEW_VERSION,
     invite_reference,
+    invite_series,
     render_invite_preview,
 )
 from .models import Invitation
 from .reader_profile import get_or_create_reader_profile
+
+
+def _invite_status_label(invitation) -> str:
+    if invitation.accepted_at is not None:
+        return "Использовано"
+    if invitation.revoked_at is not None:
+        return "Отозвано"
+    if invitation.expires_at <= timezone.now():
+        return "Истекло"
+    return "Не использовано"
+
+
+def _prepare_invite_form(form):
+    form.fields["username"].widget.attrs.pop("autofocus", None)
+    for field_name in ("username", "password1", "password2"):
+        form.fields[field_name].widget.attrs.pop("placeholder", None)
+    return form
 
 
 def _invite_context(request, invitation, **extra):
@@ -25,6 +43,8 @@ def _invite_context(request, invitation, **extra):
     context = {
         "invitation": invitation,
         "invite_reference": invite_reference(invitation),
+        "invite_series": invite_series(invitation),
+        "invite_status_label": _invite_status_label(invitation),
         "invite_url": request.build_absolute_uri(invitation.get_absolute_url()),
         "invite_preview_url": request.build_absolute_uri(preview_path),
         "invite_preview_alt": INVITE_PREVIEW_ALT,
@@ -48,7 +68,7 @@ def invite_accept(request, token):
         )
 
     if request.method == "POST":
-        form = InvitationAcceptForm(request.POST)
+        form = _prepare_invite_form(InvitationAcceptForm(request.POST))
         if form.is_valid():
             with transaction.atomic():
                 invitation = Invitation.objects.select_for_update().get(pk=invitation.pk)
@@ -69,7 +89,7 @@ def invite_accept(request, token):
             messages.success(request, "Приглашение принято. Редакционная лента открыта.")
             return redirect("article-list")
     else:
-        form = InvitationAcceptForm()
+        form = _prepare_invite_form(InvitationAcceptForm())
 
     return render(
         request,
