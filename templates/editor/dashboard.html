@@ -33,7 +33,7 @@
             <div class="desk-row__actions">
                 {% if article.status == 'published' %}
                     <span
-                        class="readership-metric"
+                        class="stamp readership-metric"
                         title="{{ article.unique_reader_count }} читателей · {{ article.total_open_count }} открытий"
                         aria-label="{{ article.unique_reader_count }} читателей, {{ article.total_open_count }} открытий"
                     >{{ article.unique_reader_count }} · {{ article.total_open_count }}</span>
