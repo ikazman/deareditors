@@ -44,6 +44,7 @@ class ArticleImageEditorUITests(SimpleTestCase):
 
         self.assertIn("Посмотреть черновик ↗", template)
         self.assertIn("Открыть в издании ↗", template)
-        self.assertIn(".actions .btn--danger", css)
-        self.assertIn("margin-left:auto", css)
-        self.assertIn("flex-wrap:nowrap", css)
+        self.assertIn('class="actions__main"', template)
+        self.assertIn('class="actions__danger"', template)
+        self.assertIn("justify-content:space-between", css)
+        self.assertIn("margin-top:1.35rem", css)
