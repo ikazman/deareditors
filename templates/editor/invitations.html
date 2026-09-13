@@ -44,9 +44,10 @@
             {% if invitation.accepted_by %}
                 <p class="invite-row__note">Принято пользователем {{ invitation.accepted_by.username }}.</p>
             {% elif invitation.is_active %}
+                {# preview=4 intentionally versions the shared page URL, not only the OG image URL. #}
                 <label class="field__label" for="invite-{{ invitation.pk }}">Ссылка</label>
-                <input id="invite-{{ invitation.pk }}" class="input invite-url" type="text" value="{{ invitation.share_url }}" readonly onclick="this.select()">
-                <p class="field__hint">Действует до {{ invitation.expires_at|date:"d.m.Y · H:i" }} и только один раз. <a href="{{ invitation.share_url }}" target="_blank" rel="noopener">Открыть билет ↗</a></p>
+                <input id="invite-{{ invitation.pk }}" class="input invite-url" type="text" value="{{ invitation.share_url }}?preview=4" readonly onclick="this.select()">
+                <p class="field__hint">Действует до {{ invitation.expires_at|date:"d.m.Y · H:i" }} и только один раз. <a href="{{ invitation.share_url }}?preview=4" target="_blank" rel="noopener">Открыть билет ↗</a></p>
                 <form class="invite-revoke" method="post" action="{% url 'editor-invitation-revoke' invitation.pk %}">
                     {% csrf_token %}
                     <button class="btn btn--danger" type="submit">Отозвать приглашение</button>
