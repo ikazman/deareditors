@@ -19,9 +19,14 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
     path("invite/<uuid:token>/", invite_views.invite_accept, name="invite-accept"),
     path(
-        "og/invite/<uuid:token>.png",
+        "og/invite/<uuid:token>/<int:version>.png",
         invite_views.invite_preview,
         name="invite-preview",
+    ),
+    path(
+        "og/invite/<uuid:token>.png",
+        invite_views.invite_preview_legacy,
+        name="invite-preview-legacy",
     ),
     path("", views.article_list, name="article-list"),
     path("reader-card/", views.reader_card, name="reader-card"),

@@ -30,11 +30,19 @@ class InvitePreviewTests(TestCase):
         )
 
     def _preview_url(self):
-        path = reverse("invite-preview", kwargs={"token": self.invitation.token})
-        return f"{path}?v={INVITE_PREVIEW_VERSION}"
+        return reverse(
+            "invite-preview",
+            kwargs={
+                "token": self.invitation.token,
+                "version": INVITE_PREVIEW_VERSION,
+            },
+        )
+
+    def _share_url(self):
+        return f"{self.invitation.get_absolute_url()}?preview={INVITE_PREVIEW_VERSION}"
 
     def test_get_and_head_do_not_consume_invitation(self):
-        url = self.invitation.get_absolute_url()
+        url = self._share_url()
 
         get_response = self.client.get(url)
         head_response = self.client.head(url)
@@ -47,9 +55,10 @@ class InvitePreviewTests(TestCase):
         self.assertTrue(self.invitation.is_active)
 
     def test_invite_page_exposes_messenger_open_graph_metadata(self):
-        response = self.client.get(self.invitation.get_absolute_url(), secure=True)
+        response = self.client.get(self._share_url(), secure=True)
         reference = invite_reference(self.invitation)
         preview_url = self._preview_url()
+        share_url = self._share_url()
 
         self.assertContains(response, '<meta property="og:title" content="Пригласительный билет Dear Editors">', html=True)
         self.assertContains(response, f"Билет {reference}. Действует до")
@@ -58,10 +67,37 @@ class InvitePreviewTests(TestCase):
         self.assertContains(response, '<meta property="og:image:height" content="630">', html=True)
         self.assertContains(response, f'<meta property="og:image:alt" content="{INVITE_PREVIEW_ALT}">', html=True)
         self.assertContains(response, f'<meta property="og:image:secure_url" content="https://testserver{preview_url}">', html=True)
+        self.assertContains(response, f'<meta property="og:url" content="https://testserver{share_url}">', html=True)
         self.assertContains(response, f"https://testserver{preview_url}")
         self.assertContains(response, 'name="twitter:card" content="summary_large_image"')
         self.assertNotContains(response, 'name="robots"')
         self.assertNotContains(response, "noindex")
+
+    def test_telegram_and_whatsapp_crawlers_get_the_same_server_rendered_metadata(self):
+        user_agents = (
+            "TelegramBot (like TwitterBot)",
+            "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+        )
+
+        for user_agent in user_agents:
+            with self.subTest(user_agent=user_agent):
+                response = self.client.get(
+                    self._share_url(),
+                    secure=True,
+                    HTTP_USER_AGENT=user_agent,
+                )
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, '<meta property="og:type" content="website">', html=True)
+                self.assertContains(response, f"https://testserver{self._preview_url()}")
+                self.assertNotIn("Location", response.headers)
+
+    def test_editor_shares_versioned_page_url_to_bust_messenger_page_cache(self):
+        self.client.force_login(self.editor)
+
+        response = self.client.get(reverse("editor-invitations"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f"?preview={INVITE_PREVIEW_VERSION}")
 
     def test_invite_reference_is_short_and_series_is_separate(self):
         reference = invite_reference(self.invitation)
@@ -105,28 +141,39 @@ class InvitePreviewTests(TestCase):
         response = self.client.get(self.invitation.get_absolute_url())
         self.assertContains(response, "Истекло", status_code=410)
 
-    def test_preview_is_direct_public_png_with_expected_dimensions_and_weight(self):
+    def test_preview_is_direct_public_png_with_expected_dimensions_weight_and_headers(self):
         url = self._preview_url()
 
         response = self.client.get(url)
+        head_response = self.client.head(url)
 
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(head_response.status_code, 200)
         self.assertEqual(response["Content-Type"], "image/png")
+        self.assertEqual(head_response["Content-Type"], "image/png")
         self.assertEqual(response["X-Content-Type-Options"], "nosniff")
         self.assertIn("max-age=31536000", response["Cache-Control"])
+        self.assertNotIn("Location", response.headers)
+        self.assertEqual(response["Content-Length"], str(len(response.content)))
+        self.assertEqual(head_response["Content-Length"], str(len(response.content)))
         self.assertLess(len(response.content), 500 * 1024)
         image = Image.open(BytesIO(response.content))
         self.assertEqual(image.size, INVITE_PREVIEW_SIZE)
         self.assertEqual(image.format, "PNG")
 
-    def test_preview_version_is_query_parameter_and_required(self):
-        path = reverse("invite-preview", kwargs={"token": self.invitation.token})
+    def test_preview_version_is_in_path_and_legacy_v3_url_remains_readable(self):
+        current = self.client.get(self._preview_url())
+        wrong = self.client.get(
+            reverse(
+                "invite-preview",
+                kwargs={"token": self.invitation.token, "version": INVITE_PREVIEW_VERSION - 1},
+            )
+        )
+        legacy_path = reverse("invite-preview-legacy", kwargs={"token": self.invitation.token})
+        legacy = self.client.get(f"{legacy_path}?v=3")
+        missing_legacy_version = self.client.get(legacy_path)
 
-        missing = self.client.get(path)
-        old = self.client.get(f"{path}?v={INVITE_PREVIEW_VERSION - 1}")
-        current = self.client.get(f"{path}?v={INVITE_PREVIEW_VERSION}")
-
-        self.assertEqual(missing.status_code, 404)
-        self.assertEqual(old.status_code, 404)
         self.assertEqual(current.status_code, 200)
-        self.assertEqual(current.redirect_chain if hasattr(current, "redirect_chain") else [], [])
+        self.assertEqual(wrong.status_code, 404)
+        self.assertEqual(legacy.status_code, 200)
+        self.assertEqual(missing_legacy_version.status_code, 404)
