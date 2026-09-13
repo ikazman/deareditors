@@ -291,3 +291,60 @@ class MCPAccessKey(models.Model):
     @property
     def masked(self):
         return f"de_mcp_{self.prefix}_…"
+
+
+class ReaderArticleView(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name="читатель",
+        related_name="article_views",
+        on_delete=models.CASCADE,
+    )
+    article = models.ForeignKey(
+        Article,
+        verbose_name="материал",
+        related_name="reader_views",
+        on_delete=models.CASCADE,
+    )
+    first_opened_at = models.DateTimeField("первое открытие", default=timezone.now)
+    last_opened_at = models.DateTimeField("последнее открытие", default=timezone.now)
+    open_count = models.PositiveIntegerField("открытий", default=1)
+
+    class Meta:
+        ordering = ["-last_opened_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=("user", "article"),
+                name="unique_reader_article_view",
+            )
+        ]
+        verbose_name = "просмотр материала читателем"
+        verbose_name_plural = "просмотры материалов читателями"
+
+    def __str__(self):
+        return f"{self.user} — {self.article} ({self.open_count})"
+
+
+class ReaderDailyVisit(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name="читатель",
+        related_name="reader_daily_visits",
+        on_delete=models.CASCADE,
+    )
+    visit_date = models.DateField("дата посещения", default=timezone.localdate)
+    created_at = models.DateTimeField("зафиксировано", auto_now_add=True)
+
+    class Meta:
+        ordering = ["-visit_date", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=("user", "visit_date"),
+                name="unique_reader_daily_visit",
+            )
+        ]
+        verbose_name = "день посещения читателя"
+        verbose_name_plural = "дни посещений читателей"
+
+    def __str__(self):
+        return f"{self.user} — {self.visit_date:%d.%m.%Y}"
