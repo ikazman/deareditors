@@ -80,6 +80,7 @@ class ArticleImage(models.Model):
         related_name="images",
         on_delete=models.CASCADE,
     )
+    marker_index = models.PositiveIntegerField("номер в тексте", editable=False)
     file = models.FileField("изображение", upload_to=article_image_upload_path, max_length=255)
     caption = models.CharField("подпись", max_length=500, blank=True)
     alt_text = models.CharField("описание", max_length=240)
@@ -89,15 +90,32 @@ class ArticleImage(models.Model):
 
     class Meta:
         ordering = ["created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=("article", "marker_index"),
+                name="unique_article_image_marker_index",
+            )
+        ]
         verbose_name = "изображение материала"
         verbose_name_plural = "изображения материала"
 
     def __str__(self):
-        return self.caption or f"Изображение {self.pk}"
+        return self.caption or f"Изображение {self.marker_index}"
+
+    def save(self, *args, **kwargs):
+        if self.marker_index is None:
+            current_max = (
+                ArticleImage.objects.filter(article_id=self.article_id).aggregate(
+                    max_index=models.Max("marker_index")
+                )["max_index"]
+                or 0
+            )
+            self.marker_index = current_max + 1
+        super().save(*args, **kwargs)
 
     @property
     def marker(self):
-        return f"[[image:{self.pk}]]"
+        return f"[[фото {self.marker_index}]]"
 
     def get_absolute_url(self):
         return reverse("article-image", kwargs={"pk": self.pk})
