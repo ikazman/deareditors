@@ -17,12 +17,54 @@ PERMANENT_READER_THRESHOLD = 50
 CARD_DAY_SUBSCRIBER_THRESHOLD = 30
 CARD_DAY_RUBRIC = "Карта дня"
 
+# Это текущие формулировки правил выдачи. При первом выполнении условия они
+# копируются в AchievementUnlock и дальше не меняют уже выданную отметку.
+MARK_DEFINITIONS = {
+    AchievementUnlock.Code.CORRESPONDENT_III: (
+        "Корреспондент III степени",
+        "Письмо предъявителя использовано редакцией.",
+    ),
+    AchievementUnlock.Code.CORRESPONDENT_II: (
+        "Корреспондент II степени",
+        "Использовано третье письмо предъявителя.",
+    ),
+    AchievementUnlock.Code.CORRESPONDENT_I: (
+        "Корреспондент I степени",
+        "Использовано десятое письмо предъявителя.",
+    ),
+    AchievementUnlock.Code.PERMANENT_READER: (
+        "Постоянный читатель",
+        "Прочитано пятьдесят материалов.",
+    ),
+    AchievementUnlock.Code.ANONYMOUS_SOURCE: (
+        "Источник, пожелавший остаться неизвестным",
+        "Письмо предъявителя стало заметкой без раскрытия источника.",
+    ),
+    AchievementUnlock.Code.COMPLETE_MONTH: (
+        "Читатель без пропусков",
+        "Прочитаны все материалы, вышедшие за календарный месяц.",
+    ),
+    AchievementUnlock.Code.ARCHIVE_READER: (
+        "Читатель архива",
+        "Открыт материал старше трех месяцев.",
+    ),
+    AchievementUnlock.Code.CARD_DAY_SUBSCRIBER: (
+        "Постоянный подписчик рубрики",
+        "Прочитано тридцать выпусков рубрики «Карта дня».",
+    ),
+}
+
 
 def _award(user, code, unlocked_at):
+    title, description = MARK_DEFINITIONS[code]
     AchievementUnlock.objects.get_or_create(
         user=user,
         code=code,
-        defaults={"unlocked_at": unlocked_at},
+        defaults={
+            "title": title,
+            "description": description,
+            "unlocked_at": unlocked_at,
+        },
     )
 
 
