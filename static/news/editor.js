@@ -27,9 +27,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const currentHeight = textarea.getBoundingClientRect().height;
       applyingHeight = true;
       textarea.style.height = "auto";
-      const naturalHeight = textarea.scrollHeight;
-      const nextHeight = Math.max(manualFloor, Math.ceil(naturalHeight));
-      textarea.style.height = `${nextHeight}px`;
+      const nextHeight = Math.max(manualFloor, textarea.scrollHeight);
+      textarea.style.height = `${Math.ceil(nextHeight)}px`;
       lastAppliedHeight = textarea.getBoundingClientRect().height;
 
       if (Math.abs(currentHeight - lastAppliedHeight) <= 1) {
