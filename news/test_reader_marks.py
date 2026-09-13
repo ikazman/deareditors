@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -176,15 +176,13 @@ class ReaderMarksTests(TestCase):
         current_month = today.replace(day=1)
         previous_month_last = current_month - timedelta(days=1)
         previous_month_first = previous_month_last.replace(day=1)
-        articles = []
         for index in range(3):
             article = self._published_article(
                 f"Материал прошлого месяца {index + 1}",
                 published_at=timezone.make_aware(
-                    timezone.datetime.combine(previous_month_first + timedelta(days=index), timezone.datetime.min.time())
+                    datetime.combine(previous_month_first + timedelta(days=index), time.min)
                 ),
             )
-            articles.append(article)
             ReaderArticleView.objects.create(user=self.reader, article=article)
         self.client.force_login(self.reader)
 
