@@ -1,5 +1,6 @@
 import uuid
 from datetime import timedelta
+from pathlib import Path
 
 from django.conf import settings
 from django.db import models
@@ -24,6 +25,13 @@ def article_image_upload_path(instance, filename):
     return f"article-images/{instance.article_id}/{uuid.uuid4().hex}{extension}"
 
 
+def tarot_card_upload_path(instance, filename):
+    extension = Path(filename).suffix.lower()
+    if extension not in {".jpg", ".jpeg", ".png", ".webp"}:
+        extension = ".jpg"
+    return f"tarot/cards/{uuid.uuid4().hex}{extension}"
+
+
 class Article(models.Model):
     class Status(models.TextChoices):
         DRAFT = "draft", "Черновик"
@@ -31,6 +39,7 @@ class Article(models.Model):
 
     title = models.CharField("заголовок", max_length=220)
     slug = models.SlugField("адрес", max_length=240, unique=True, blank=True, allow_unicode=True)
+    rubric = models.CharField("рубрика", max_length=80, blank=True)
     lead = models.TextField("лид", blank=True)
     body = models.TextField("текст")
     author_name = models.CharField("автор", max_length=120, default="Дорогая редакция")
@@ -125,6 +134,61 @@ class ArticleImage(models.Model):
 def delete_article_image_file(sender, instance, **kwargs):
     if instance.file:
         instance.file.storage.delete(instance.file.name)
+
+
+class TarotCard(models.Model):
+    name = models.CharField("карта", max_length=120, unique=True)
+    description = models.TextField("описание", blank=True)
+    check_words = models.TextField("ключевые слова", blank=True)
+    prophecy = models.TextField("прогноз", blank=True)
+    meaning_straight = models.TextField("прямое значение")
+    meaning_reversed = models.TextField("перевернутое значение")
+    image = models.FileField("изображение карты", upload_to=tarot_card_upload_path, max_length=255)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "карта Таро"
+        verbose_name_plural = "карты Таро"
+
+    def __str__(self):
+        return self.name
+
+
+@receiver(post_delete, sender=TarotCard)
+def delete_tarot_card_file(sender, instance, **kwargs):
+    if instance.image:
+        instance.image.storage.delete(instance.image.name)
+
+
+class TarotDraw(models.Model):
+    class Position(models.TextChoices):
+        STRAIGHT = "straight", "Прямая"
+        REVERSED = "reversed", "Перевернутая"
+
+    draw_date = models.DateField("дата", unique=True)
+    question = models.CharField("вопрос", max_length=240)
+    card_name = models.CharField("карта", max_length=120)
+    position = models.CharField("положение", max_length=12, choices=Position.choices)
+    check_words = models.TextField("ключевые слова", blank=True)
+    prophecy = models.TextField("прогноз", blank=True)
+    meaning = models.TextField("значение")
+    article = models.OneToOneField(
+        Article,
+        verbose_name="черновик",
+        related_name="tarot_draw",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField("создано", auto_now_add=True)
+
+    class Meta:
+        ordering = ["-draw_date"]
+        verbose_name = "карта дня"
+        verbose_name_plural = "карты дня"
+
+    def __str__(self):
+        return f"{self.draw_date:%d.%m.%Y} — {self.card_name}"
 
 
 class EditorialLetter(models.Model):
