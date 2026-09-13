@@ -4,8 +4,12 @@
 
 .article-figure img{
   display:block;
-  width:100%;
+  width:auto;
+  max-width:100%;
   height:auto;
+  max-height:min(42rem,72vh);
+  object-fit:contain;
+  object-position:left top;
 }
 
 .article-figure--measure{
@@ -343,6 +347,10 @@
   .article-figure--measure,.article-figure--wide{
     width:100%;
     max-width:100%;
+  }
+
+  .article-figure img{
+    max-height:62vh;
   }
 
   .article-figure{
