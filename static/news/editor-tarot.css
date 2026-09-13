@@ -1,0 +1,232 @@
+.page-head__actions{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:flex-end;
+  gap:.8rem 1.15rem;
+}
+
+.tarot-head{
+  align-items:flex-end;
+}
+
+.tarot-deck-count{
+  color:var(--ink-faint);
+  font-size:.7rem;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+}
+
+.tarot-question{
+  max-width:32rem;
+  margin:1.55rem 0 0;
+  font-family:"Playfair Display",serif;
+  font-size:clamp(1.25rem,3vw,1.65rem);
+  font-style:italic;
+  font-weight:700;
+  line-height:1.25;
+}
+
+.tarot-intro{
+  max-width:32rem;
+  margin:.65rem 0 1.8rem;
+  color:var(--ink-soft);
+  font-size:.9rem;
+  line-height:1.55;
+}
+
+.tarot-panel{
+  max-width:var(--read);
+  padding:1.5rem 0 1.7rem;
+  border-top:1px solid var(--ink);
+  border-bottom:1px solid var(--rule);
+}
+
+.tarot-panel h2{
+  max-width:24ch;
+  margin:0;
+  font-family:"Playfair Display",serif;
+  font-size:clamp(1.65rem,4vw,2.25rem);
+  line-height:1.05;
+}
+
+.tarot-panel>p:not(.rubric),.tarot-result__copy>p{
+  max-width:32rem;
+}
+
+.tarot-panel>p:not(.rubric){
+  margin:.65rem 0 1.15rem;
+  color:var(--ink-soft);
+  font-size:.9rem;
+  line-height:1.55;
+}
+
+.tarot-panel code{
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-size:.85em;
+}
+
+.tarot-import{
+  max-width:30rem;
+  margin-top:1.25rem;
+}
+
+.tarot-import__file{
+  display:block;
+  width:100%;
+  padding:.45rem 0;
+  border:0;
+  border-bottom:1px solid var(--ink);
+  border-radius:0;
+  background:transparent;
+  color:var(--ink-soft);
+  font:inherit;
+  font-size:.82rem;
+}
+
+.tarot-import__file::file-selector-button{
+  margin-right:.75rem;
+  padding:.42rem .75rem;
+  border:1px solid var(--ink);
+  border-radius:0;
+  background:transparent;
+  color:var(--ink);
+  font:inherit;
+  cursor:pointer;
+}
+
+.tarot-import__submit{
+  margin-top:1rem;
+}
+
+.tarot-result{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 10.5rem;
+  align-items:start;
+  gap:2rem;
+}
+
+.tarot-result__copy h2{
+  margin-bottom:.2rem;
+}
+
+.tarot-position{
+  margin:.2rem 0 0;
+  color:var(--rubric);
+  font-size:.72rem;
+  font-weight:700;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+}
+
+.tarot-keywords{
+  margin:.7rem 0 1.2rem;
+  color:var(--ink-soft);
+  font-size:.88rem;
+  font-style:italic;
+  line-height:1.45;
+}
+
+.tarot-result__image{
+  display:block;
+  width:100%;
+  height:auto;
+  border:1px solid var(--rule);
+}
+
+.tarot-note{
+  margin:1.25rem 0 0!important;
+  color:var(--ink-faint)!important;
+  font-size:.78rem!important;
+}
+
+.tarot-history{
+  max-width:var(--read);
+  margin-top:2rem;
+}
+
+.tarot-history ol{
+  margin:0;
+  padding:0;
+  border-top:1px solid var(--rule);
+  list-style:none;
+}
+
+.tarot-history li{
+  display:grid;
+  grid-template-columns:6.5rem minmax(0,1fr) 7.5rem auto;
+  align-items:baseline;
+  gap:.8rem;
+  padding:.65rem 0;
+  border-bottom:1px solid var(--rule);
+  font-size:.82rem;
+}
+
+.tarot-history__date,.tarot-history__position{
+  color:var(--ink-faint);
+}
+
+.tarot-history__card{
+  font-weight:700;
+}
+
+.tarot-history a{
+  padding-bottom:1px;
+  border-bottom:1px solid var(--rule);
+  text-decoration:none;
+}
+
+.tarot-history a:hover{
+  border-bottom-color:var(--ink);
+}
+
+.tarot-reimport{
+  max-width:var(--read);
+  margin:2rem 0 3rem;
+  color:var(--ink-soft);
+  font-size:.82rem;
+}
+
+.tarot-reimport summary{
+  width:max-content;
+  max-width:100%;
+  padding-bottom:1px;
+  border-bottom:1px solid var(--rule);
+  color:var(--ink);
+  cursor:pointer;
+}
+
+.tarot-reimport>p{
+  max-width:32rem;
+  margin:.8rem 0 0;
+  line-height:1.5;
+}
+
+@media (max-width:40rem){
+  .page-head__actions{
+    justify-content:flex-start;
+  }
+
+  .tarot-result{
+    grid-template-columns:1fr;
+    gap:1.25rem;
+  }
+
+  .tarot-result__image{
+    width:min(14rem,70vw);
+  }
+
+  .tarot-history li{
+    grid-template-columns:5.6rem minmax(0,1fr);
+    gap:.25rem .75rem;
+  }
+
+  .tarot-history__position{
+    grid-column:2;
+  }
+
+  .tarot-history li a{
+    grid-column:2;
+    width:max-content;
+  }
+}

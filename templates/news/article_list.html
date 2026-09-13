@@ -14,7 +14,12 @@
         <article class="entry">
             <div class="byline">
                 <span class="stamp">{{ article.published_at|date:"d.m.Y" }}</span>
-                <span class="desk">{{ article.author_name }}</span>
+                {% if article.rubric %}
+                    <span class="stamp" aria-hidden="true">·</span>
+                    <span class="desk">{{ article.rubric }}</span>
+                {% else %}
+                    <span class="desk">{{ article.author_name }}</span>
+                {% endif %}
             </div>
             <h2><a href="{{ article.get_absolute_url }}">{{ article.title }}</a></h2>
             {% if article.lead %}<p>{{ article.lead }}</p>{% endif %}

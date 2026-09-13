@@ -1,7 +1,12 @@
 {% load editorial_markdown %}
 <div class="article__byline">
     <span class="stamp">{{ article.published_at|date:"d.m.Y" }}</span>
-    <span class="desk">{{ article.author_name }}</span>
+    {% if article.rubric %}
+        <span class="stamp" aria-hidden="true">·</span>
+        <span class="desk">{{ article.rubric }}</span>
+    {% else %}
+        <span class="desk">{{ article.author_name }}</span>
+    {% endif %}
 </div>
 
 <h1 class="article__title">{{ article.title }}</h1>
