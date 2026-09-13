@@ -22,6 +22,7 @@ from .forms import (
 )
 from .mcp_access import issue_mcp_key
 from .models import Article, ArticleImage, EditorialLetter, Invitation, MCPAccessKey, TarotCard, TarotDraw
+from .reader_activity import record_article_open, record_daily_visit
 from .tarot_service import create_card_of_day, import_tarot_bundle, question_for_date, recent_draws
 
 
@@ -37,6 +38,7 @@ def health(request):
 
 @login_required
 def article_list(request):
+    record_daily_visit(request.user)
     articles = Article.objects.filter(status=Article.Status.PUBLISHED, published_at__isnull=False)
     return render(request, "news/article_list.html", {"articles": articles})
 
@@ -49,6 +51,7 @@ def article_detail(request, slug):
         status=Article.Status.PUBLISHED,
         published_at__isnull=False,
     )
+    record_article_open(request.user, article)
     return render(request, "news/article_detail.html", {"article": article})
 
 
