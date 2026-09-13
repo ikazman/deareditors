@@ -1,4 +1,5 @@
 {% load editorial_markdown %}
+{% if article.rubric %}<p class="article__rubric">{{ article.rubric }}</p>{% endif %}
 <div class="article__byline">
     <span class="stamp">{{ article.published_at|date:"d.m.Y" }}</span>
     <span class="desk">{{ article.author_name }}</span>
