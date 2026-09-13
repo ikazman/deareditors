@@ -168,9 +168,10 @@ class ArticleImageForm(forms.ModelForm):
                     "accept": "image/jpeg,image/png,image/webp,image/gif",
                 }
             ),
-            "caption": forms.TextInput(
+            "caption": forms.Textarea(
                 attrs={
-                    "class": "image-dialog__input",
+                    "class": "image-dialog__input image-dialog__caption",
+                    "rows": 2,
                     "placeholder": "Например: Фото предоставлено источником, пожелавшим остаться в столовой",
                 }
             ),
