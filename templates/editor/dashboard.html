@@ -6,7 +6,10 @@
         <p class="rubric">Редакция</p>
         <h1 class="page-title">Материалы</h1>
     </div>
-    <a class="btn" href="{% url 'editor-article-create' %}">Новая заметка</a>
+    <div class="page-head__actions">
+        <a class="btn btn--quiet" href="{% url 'editor-tarot' %}">Карта дня</a>
+        <a class="btn" href="{% url 'editor-article-create' %}">Новая заметка</a>
+    </div>
 </div>
 
 <ul class="desk-list">
@@ -21,6 +24,7 @@
                         <span class="status">Опубликовано</span>
                         <span class="stamp">{{ article.published_at|date:"d.m.Y · H:i" }}</span>
                     {% endif %}
+                    {% if article.rubric %}<span class="desk">{{ article.rubric }}</span>{% endif %}
                     <span class="desk">{{ article.author_name }}</span>
                 </div>
                 <h2 class="desk-row__title"><a href="{% url 'editor-article-edit' article.pk %}">{{ article.title }}</a></h2>
