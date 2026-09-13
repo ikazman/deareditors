@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Dear Editors — до дорогой редакции дошел слух.">
-    <meta name="robots" content="noindex,nofollow,noarchive">
+    {% block robots %}<meta name="robots" content="noindex,nofollow,noarchive">{% endblock %}
     <meta name="theme-color" content="#f3f0e9">
     <title>{% block title %}Dear Editors{% endblock %}</title>
     <link rel="icon" href="{% static 'news/favicon.svg' %}" type="image/svg+xml">
