@@ -27,6 +27,17 @@ class ArticleImageEditorUITests(SimpleTestCase):
         self.assertIn(".image-dialog__actions", css)
         self.assertIn(".image-dialog__choice input:checked+span", css)
 
+    def test_article_images_do_not_expand_tall_artwork_to_full_measure(self):
+        css_path = finders.find("news/article-images.css")
+        self.assertIsNotNone(css_path)
+        css = Path(css_path).read_text(encoding="utf-8")
+
+        self.assertIn("width:auto", css)
+        self.assertIn("max-width:100%", css)
+        self.assertIn("max-height:min(42rem,72vh)", css)
+        self.assertIn("max-height:62vh", css)
+        self.assertIn("object-fit:contain", css)
+
     def test_image_upload_preserves_caret_before_dialog_focus_moves(self):
         js_path = finders.find("news/editor.js")
         self.assertIsNotNone(js_path)
