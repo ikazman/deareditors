@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.db import DatabaseError, connection, transaction
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -10,9 +11,18 @@ from django.views.decorators.http import require_POST
 
 from .auth import editor_required
 from .editorial_service import create_or_update_draft_from_letter
-from .forms import ArticleForm, ArticleImageForm, EditorialLetterForm, InvitationAcceptForm, InvitationForm, MCPKeyForm
+from .forms import (
+    ArticleForm,
+    ArticleImageForm,
+    EditorialLetterForm,
+    InvitationAcceptForm,
+    InvitationForm,
+    MCPKeyForm,
+    TarotDeckImportForm,
+)
 from .mcp_access import issue_mcp_key
-from .models import Article, ArticleImage, EditorialLetter, Invitation, MCPAccessKey
+from .models import Article, ArticleImage, EditorialLetter, Invitation, MCPAccessKey, TarotCard, TarotDraw
+from .tarot_service import create_card_of_day, import_tarot_bundle, question_for_date, recent_draws
 
 
 def health(request):
@@ -118,6 +128,52 @@ def invite_accept(request, token):
 def editor_dashboard(request):
     articles = Article.objects.all()
     return render(request, "editor/dashboard.html", {"articles": articles})
+
+
+@editor_required
+def editor_tarot(request):
+    today = timezone.localdate()
+    import_form = TarotDeckImportForm()
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "import":
+            import_form = TarotDeckImportForm(request.POST, request.FILES)
+            if import_form.is_valid():
+                try:
+                    count = import_tarot_bundle(import_form.cleaned_data["bundle"])
+                except ValidationError as exc:
+                    import_form.add_error("bundle", exc)
+                else:
+                    messages.success(request, f"Колода перенесена: {count} карт готовы к работе.")
+                    return redirect("editor-tarot")
+        elif action == "draw":
+            try:
+                draw, created = create_card_of_day(today)
+            except ValidationError as exc:
+                messages.error(request, exc.message)
+            else:
+                if created:
+                    messages.success(request, "Карта дня вытянута. Черновик подготовлен редакции.")
+                else:
+                    messages.info(request, "На сегодня карта уже вытянута. Редакция придерживается первоначального прогноза.")
+                if draw.article_id:
+                    return redirect("editor-article-edit", pk=draw.article_id)
+                return redirect("editor-tarot")
+
+    today_draw = TarotDraw.objects.select_related("article").filter(draw_date=today).first()
+    return render(
+        request,
+        "editor/tarot.html",
+        {
+            "import_form": import_form,
+            "card_count": TarotCard.objects.count(),
+            "today": today,
+            "question": question_for_date(today),
+            "today_draw": today_draw,
+            "recent_draws": recent_draws(),
+        },
+    )
 
 
 @editor_required
