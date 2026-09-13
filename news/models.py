@@ -199,13 +199,11 @@ class EditorialLetter(models.Model):
     body = models.TextField("сообщение")
     sender_name = models.CharField("имя", max_length=120, blank=True)
     contact = models.CharField("контакт", max_length=240, blank=True)
-    submitted_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        verbose_name="отправитель",
-        related_name="editorial_letters",
-        on_delete=models.SET_NULL,
+    sender_fingerprint = models.CharField(
+        "анонимный отпечаток отправителя",
+        max_length=64,
         blank=True,
-        null=True,
+        editable=False,
     )
     status = models.CharField("статус", max_length=12, choices=Status.choices, default=Status.NEW)
     created_at = models.DateTimeField("получено", auto_now_add=True)
