@@ -60,7 +60,7 @@ def editorial_markdown(value):
 def editorial_article(article):
     """Render editorial Markdown plus image markers that belong to this article."""
     body = article.body or ""
-    images = {str(image.pk): image for image in article.images.all()}
+    images = {str(image.pk): image for image in article.images.all()} if article.pk else {}
     parts = []
     cursor = 0
 
