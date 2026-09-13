@@ -4,6 +4,7 @@ from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, connection, transaction
+from django.db.models import Count, Sum
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -129,7 +130,10 @@ def invite_accept(request, token):
 
 @editor_required
 def editor_dashboard(request):
-    articles = Article.objects.all()
+    articles = Article.objects.annotate(
+        unique_reader_count=Count("reader_views"),
+        total_open_count=Sum("reader_views__open_count", default=0),
+    )
     return render(request, "editor/dashboard.html", {"articles": articles})
 
 
