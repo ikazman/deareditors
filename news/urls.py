@@ -29,6 +29,7 @@ urlpatterns = [
         name="editor-login",
     ),
     path("editor/", views.editor_dashboard, name="editor-dashboard"),
+    path("editor/tarot/", views.editor_tarot, name="editor-tarot"),
     path("editor/inbox/", views.editor_inbox, name="editor-inbox"),
     path("editor/invites/", views.editor_invitations, name="editor-invitations"),
     path(
