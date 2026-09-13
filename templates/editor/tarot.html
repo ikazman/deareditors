@@ -1,0 +1,96 @@
+{% extends 'editor/base.html' %}
+
+{% block title %}Карта дня — Dear Editors{% endblock %}
+{% block main_class %}wrap--read{% endblock %}
+
+{% block content %}
+<a class="backlink" href="{% url 'editor-dashboard' %}">К материалам</a>
+
+<div class="page-head tarot-head">
+    <div>
+        <p class="rubric">Ежедневная рубрика</p>
+        <h1 class="page-title">Карта дня</h1>
+    </div>
+    {% if card_count %}<span class="tarot-deck-count">Колода · {{ card_count }}</span>{% endif %}
+</div>
+
+<p class="tarot-question">{{ question }}</p>
+<p class="tarot-intro">Редакция задает один и тот же вопрос дню, вытягивает одну карту и готовит обычный черновик заметки. Публикация остается за человеком.</p>
+
+{% if not card_count %}
+<section class="tarot-panel tarot-panel--import">
+    <p class="rubric">Первый запуск</p>
+    <h2>Колода пока не в редакции.</h2>
+    <p>Загрузите ZIP старого репозитория <strong>tarot-hb</strong>. Dear Editors возьмет <code>high_arcane.xlsx</code> и папку <code>cards</code>, сохранит 22 Старших Аркана у себя и дальше будет работать без отдельного Telegram-бота.</p>
+
+    <form class="tarot-import" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="import">
+        <label class="field__label" for="{{ import_form.bundle.id_for_label }}">Архив колоды</label>
+        {{ import_form.bundle }}
+        {{ import_form.bundle.errors }}
+        <span class="field__hint">Подойдет ZIP всей папки репозитория или архив, скачанный с GitHub.</span>
+        <button class="btn tarot-import__submit" type="submit">Перенести колоду</button>
+    </form>
+</section>
+{% else %}
+<section class="tarot-panel">
+    {% if today_draw %}
+        <p class="rubric">Сегодня уже выпало</p>
+        <div class="tarot-result">
+            <div class="tarot-result__copy">
+                <h2>{{ today_draw.card_name }}</h2>
+                <p class="tarot-position">{{ today_draw.get_position_display }}</p>
+                {% if today_draw.check_words %}<p class="tarot-keywords">{{ today_draw.check_words }}</p>{% endif %}
+                {% if today_draw.article_id %}
+                    <a class="btn" href="{% url 'editor-article-edit' today_draw.article_id %}">Открыть черновик</a>
+                {% endif %}
+            </div>
+            {% if today_draw.article_id %}
+                {% with tarot_image=today_draw.article.images.first %}
+                    {% if tarot_image %}<img class="tarot-result__image" src="{{ tarot_image.get_absolute_url }}" alt="Карта Таро «{{ today_draw.card_name }}»">{% endif %}
+                {% endwith %}
+            {% endif %}
+        </div>
+        <p class="tarot-note">Повторный запуск на эту дату не меняет карту. Редакция придерживается первоначального прогноза.</p>
+    {% else %}
+        <p class="rubric">Колода готова</p>
+        <h2>Можно спрашивать.</h2>
+        <p>Будет создан обычный черновик: рубрика «Карта дня», название карты, вопрос в лиде, изображение и толкование из старой колоды.</p>
+        <form method="post">
+            {% csrf_token %}
+            <button class="btn" type="submit" name="action" value="draw">Вытянуть карту и создать черновик</button>
+        </form>
+    {% endif %}
+</section>
+
+{% if recent_draws %}
+<section class="tarot-history">
+    <p class="rubric">Последние расклады</p>
+    <ol>
+        {% for draw in recent_draws %}
+            <li>
+                <span class="tarot-history__date">{{ draw.draw_date|date:"d.m.Y" }}</span>
+                <span class="tarot-history__card">{{ draw.card_name }}</span>
+                <span class="tarot-history__position">{{ draw.get_position_display }}</span>
+                {% if draw.article_id %}<a href="{% url 'editor-article-edit' draw.article_id %}">Черновик</a>{% endif %}
+            </li>
+        {% endfor %}
+    </ol>
+</section>
+{% endif %}
+
+<details class="tarot-reimport">
+    <summary>Заменить колоду</summary>
+    <p>Импорт нужен только как мост из старого бота. Уже созданные заметки не меняются: карта и текст сохраняются в них как снимок на день публикации.</p>
+    <form class="tarot-import" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="import">
+        <label class="field__label" for="{{ import_form.bundle.id_for_label }}">Новый ZIP</label>
+        {{ import_form.bundle }}
+        {{ import_form.bundle.errors }}
+        <button class="btn btn--quiet tarot-import__submit" type="submit">Импортировать заново</button>
+    </form>
+</details>
+{% endif %}
+{% endblock %}
