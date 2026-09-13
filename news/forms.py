@@ -1,3 +1,5 @@
+import zipfile
+
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
@@ -7,6 +9,7 @@ from .models import Article, ArticleImage, EditorialLetter, Invitation
 
 
 MAX_ARTICLE_IMAGE_SIZE = 12 * 1024 * 1024
+MAX_TAROT_BUNDLE_SIZE = 25 * 1024 * 1024
 
 
 def detect_image_content_type(upload):
@@ -194,6 +197,31 @@ class ArticleImageForm(forms.ModelForm):
             raise forms.ValidationError("Редакция принимает JPEG, PNG, WebP и GIF.")
 
         self.instance.content_type = content_type
+        return upload
+
+
+class TarotDeckImportForm(forms.Form):
+    bundle = forms.FileField(
+        label="Архив старой колоды",
+        widget=forms.ClearableFileInput(
+            attrs={
+                "class": "tarot-import__file",
+                "accept": ".zip,application/zip",
+            }
+        ),
+    )
+
+    def clean_bundle(self):
+        upload = self.cleaned_data["bundle"]
+        if upload.size > MAX_TAROT_BUNDLE_SIZE:
+            raise forms.ValidationError("Архив слишком большой. Максимум — 25 МБ.")
+        try:
+            with zipfile.ZipFile(upload) as archive:
+                archive.testzip()
+        except (zipfile.BadZipFile, OSError):
+            raise forms.ValidationError("Нужен обычный ZIP-архив репозитория tarot-hb.") from None
+        finally:
+            upload.seek(0)
         return upload
 
 
