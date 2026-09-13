@@ -1,19 +1,72 @@
 {% extends 'base.html' %}
 
-{% block title %}Приглашение — Dear Editors{% endblock %}
+{% block title %}Пригласительный билет — Dear Editors{% endblock %}
+
+{% block extra_head %}
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Dear Editors">
+    <meta property="og:title" content="Пригласительный билет Dear Editors">
+    <meta property="og:description" content="Редакция приглашает к чтению внутреннего издания Dear Editors.">
+    <meta property="og:url" content="{{ invite_url }}">
+    <meta property="og:image" content="{{ invite_preview_url }}">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="{{ invite_preview_alt }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Пригласительный билет Dear Editors">
+    <meta name="twitter:description" content="Редакция приглашает к чтению внутреннего издания Dear Editors.">
+    <meta name="twitter:image" content="{{ invite_preview_url }}">
+    <meta name="twitter:image:alt" content="{{ invite_preview_alt }}">
+{% endblock %}
 
 {% block content %}
-<section class="letter-page access-page">
+<section class="letter-page access-page invite-landing">
     <p class="rubric">По приглашению редакции</p>
-    {% if invite_invalid %}
-        <h1 class="letter-title">Приглашение больше не действует.</h1>
-        <p class="letter-note">Оно могло быть использовано, отозвано или просто пережить отведенные ему семь дней. Редакция рекомендует получить новое.</p>
-        <a class="more more--nav" href="{% url 'login' %}">К входу</a>
-    {% else %}
-        <h1 class="letter-title">Вас пригласили читать Dear Editors.</h1>
-        <p class="letter-note">{% if invitation.label %}Приглашение подготовлено для: {{ invitation.label }}.{% else %}Редакция не уточнила, для кого именно. Это, вероятно, не случайность.{% endif %}</p>
+    <h1 class="letter-title">Пригласительный билет</h1>
+    <p class="letter-note">Редакция приглашает предъявителя к чтению внутреннего издания.</p>
 
-        <form class="letter-form" method="post">
+    <div class="invite-ticket{% if invite_invalid %} invite-ticket--invalid{% endif %}" aria-label="Пригласительный билет Dear Editors">
+        <div class="invite-ticket__frame">
+            <div class="invite-ticket__head">
+                <div>
+                    <strong class="invite-ticket__name">Dear Editors</strong>
+                    <span class="invite-ticket__sub">Внутреннее издание</span>
+                </div>
+                <span class="invite-ticket__rubric">Приглашение редакции</span>
+            </div>
+
+            <div class="invite-ticket__serial-label">Номер</div>
+            <div class="invite-ticket__serial">{{ invite_reference }}</div>
+
+            <div class="invite-ticket__details">
+                <div>
+                    <span>Статус</span>
+                    <strong>{% if invite_invalid %}Не действует{% else %}Действует{% endif %}</strong>
+                </div>
+                <div>
+                    <span>Действует до</span>
+                    <strong>{{ invitation.expires_at|date:"d.m.Y · H:i" }}</strong>
+                </div>
+            </div>
+
+            <p class="invite-ticket__foot">Дает однократный доступ к изданию. Передача билета остается на усмотрение предъявителя.</p>
+        </div>
+    </div>
+
+    {% if invite_invalid %}
+        <div class="invite-copy">
+            <h2>Приглашение больше не действует.</h2>
+            <p>Оно могло быть использовано, отозвано или просто пережить отведенные ему семь дней. Редакция рекомендует получить новое.</p>
+            <a class="more more--nav" href="{% url 'login' %}">К входу</a>
+        </div>
+    {% else %}
+        <div class="invite-copy">
+            {% if invitation.label %}<p class="invite-recipient">Подготовлено для: <strong>{{ invitation.label }}</strong>.</p>{% endif %}
+            <p>Открытие этой страницы ничего не расходует. Приглашение считается принятым только после регистрации.</p>
+        </div>
+
+        <form class="letter-form invite-accept-form" method="post">
             {% csrf_token %}
             {% if form.non_field_errors %}<div class="letter-errors">{{ form.non_field_errors }}</div>{% endif %}
 
@@ -38,7 +91,7 @@
                 {{ form.password2.errors }}
             </div>
 
-            <p class="letter-privacy">Ссылка одноразовая. После регистрации она перестанет открывать двери редакционного издания.</p>
+            <p class="letter-privacy">После регистрации ссылка перестанет открывать двери внутреннего издания.</p>
             <button class="letter-submit" type="submit">Принять приглашение</button>
         </form>
     {% endif %}

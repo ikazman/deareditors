@@ -2,7 +2,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import path
 from django.views.generic import RedirectView
 
-from . import views
+from . import invite_views, views
 from .forms import ReaderAuthenticationForm
 
 urlpatterns = [
@@ -17,7 +17,12 @@ urlpatterns = [
         name="login",
     ),
     path("logout/", views.logout_view, name="logout"),
-    path("invite/<uuid:token>/", views.invite_accept, name="invite-accept"),
+    path("invite/<uuid:token>/", invite_views.invite_accept, name="invite-accept"),
+    path(
+        "invite/<uuid:token>/preview-<int:version>.png",
+        invite_views.invite_preview,
+        name="invite-preview",
+    ),
     path("", views.article_list, name="article-list"),
     path("reader-card/", views.reader_card, name="reader-card"),
     path("letter/", views.letter_create, name="letter-create"),

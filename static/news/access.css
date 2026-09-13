@@ -59,3 +59,147 @@
     margin-top: .17rem;
     accent-color: var(--rubric);
 }
+
+.invite-landing {
+    max-width: 40rem;
+}
+
+.invite-ticket {
+    margin: 1.6rem 0 1.5rem;
+    border: 1px solid var(--ink);
+    padding: .38rem;
+    background: rgba(255, 255, 255, .08);
+}
+
+.invite-ticket__frame {
+    border: 1px solid var(--rule);
+    padding: 1.35rem 1.45rem 1.1rem;
+}
+
+.invite-ticket__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 1.1rem;
+    border-bottom: 1px solid var(--rule);
+}
+
+.invite-ticket__name {
+    display: block;
+    font-family: "Playfair Display", serif;
+    font-size: 1.45rem;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.invite-ticket__sub,
+.invite-ticket__rubric,
+.invite-ticket__serial-label,
+.invite-ticket__details span {
+    display: block;
+    margin-top: .3rem;
+    font-size: .66rem;
+    line-height: 1.25;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+}
+
+.invite-ticket__sub,
+.invite-ticket__details span {
+    color: var(--ink-soft);
+}
+
+.invite-ticket__rubric,
+.invite-ticket__serial-label {
+    color: var(--rubric);
+    font-weight: 700;
+}
+
+.invite-ticket__serial-label {
+    margin-top: 1.3rem;
+}
+
+.invite-ticket__serial {
+    margin-top: .15rem;
+    font-family: "Playfair Display", serif;
+    font-size: clamp(2rem, 7vw, 3.55rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -.03em;
+}
+
+.invite-ticket__details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1.3rem;
+    padding-top: .95rem;
+    border-top: 1px solid var(--rule);
+}
+
+.invite-ticket__details strong {
+    display: block;
+    margin-top: .18rem;
+    font-size: .9rem;
+    font-weight: 700;
+}
+
+.invite-ticket__foot {
+    margin: 1.15rem 0 0;
+    padding-top: .9rem;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-soft);
+    font-size: .76rem;
+    line-height: 1.45;
+}
+
+.invite-ticket--invalid {
+    opacity: .68;
+}
+
+.invite-copy {
+    max-width: 34rem;
+    margin: 0 0 1.5rem;
+    color: var(--ink-soft);
+    font-size: .92rem;
+    line-height: 1.55;
+}
+
+.invite-copy h2 {
+    margin: 0 0 .45rem;
+    color: var(--ink);
+    font-family: "Playfair Display", serif;
+    font-size: 1.2rem;
+}
+
+.invite-copy p {
+    margin: 0 0 .6rem;
+}
+
+.invite-recipient strong {
+    color: var(--ink);
+}
+
+.invite-accept-form {
+    margin-top: 1.8rem;
+}
+
+@media (max-width: 34rem) {
+    .invite-ticket__frame {
+        padding: 1.1rem 1rem .95rem;
+    }
+
+    .invite-ticket__head {
+        display: block;
+    }
+
+    .invite-ticket__rubric {
+        margin-top: .85rem;
+    }
+
+    .invite-ticket__details {
+        grid-template-columns: 1fr;
+        gap: .75rem;
+    }
+}
