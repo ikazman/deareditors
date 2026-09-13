@@ -13,14 +13,12 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name="editorialletter",
-            name="submitted_by",
-            field=models.ForeignKey(
+            name="sender_fingerprint",
+            field=models.CharField(
                 blank=True,
-                null=True,
-                on_delete=django.db.models.deletion.SET_NULL,
-                related_name="editorial_letters",
-                to=settings.AUTH_USER_MODEL,
-                verbose_name="отправитель",
+                editable=False,
+                max_length=64,
+                verbose_name="анонимный отпечаток отправителя",
             ),
         ),
         migrations.CreateModel(
