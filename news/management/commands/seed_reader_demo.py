@@ -65,8 +65,8 @@ class Command(BaseCommand):
 
         articles = []
 
-        # 30 выпусков «Карты дня» в завершенном месяце: этого достаточно для
-        # будущей отметки постоянного подписчика рубрики и проверки полного месяца.
+        # 30 выпусков «Карты дня» в завершенном месяце одновременно дают данные
+        # для отметки подписчика рубрики и для проверки полного календарного месяца.
         for index in range(30):
             day = previous_month_first + timedelta(days=index % previous_month_last.day)
             published_at = aware_on(day, 8)
@@ -99,7 +99,7 @@ class Command(BaseCommand):
                 defaults={
                     "title": f"Демонстрационное наблюдение № {index + 1}",
                     "lead": "Обстоятельства зафиксированы и переданы в архив редакции.",
-                    "body": "До дорогой редакции дошел демонстрационный слух.\n\nБудем наблюдать.",
+                    "body": "До дорогой редакции дошел демонстрационный слух.",
                     "author_name": "Дорогая редакция",
                     "status": Article.Status.PUBLISHED,
                 },
@@ -111,8 +111,9 @@ class Command(BaseCommand):
             if index < 10:
                 EditorialLetter.objects.create(
                     body=f"[reader-demo] Письмо корреспондента № {index + 1}",
-                    sender_name="",
+                    sender_name="Анна" if index == 0 else "",
                     contact="",
+                    anonymity_requested=index == 0,
                     sender_fingerprint=fingerprint,
                     status=EditorialLetter.Status.REVIEWED,
                     reviewed_at=published_at - timedelta(hours=2),
@@ -124,6 +125,7 @@ class Command(BaseCommand):
         ordered_articles = sorted(articles, key=lambda item: (item.published_at, item.pk))
         for index, article in enumerate(ordered_articles):
             if index == 0:
+                # Старейший материал открыт сильно позже публикации: видна отметка архива.
                 first_opened_at = timezone.now() - timedelta(days=10)
             else:
                 first_opened_at = max(article.published_at + timedelta(hours=6), issued_at)
