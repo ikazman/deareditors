@@ -21,6 +21,7 @@ urlpatterns = [
     path("", views.article_list, name="article-list"),
     path("letter/", views.letter_create, name="letter-create"),
     path("letter/sent/", views.letter_sent, name="letter-sent"),
+    path("images/<uuid:pk>/", views.article_image, name="article-image"),
     path("news/<str:slug>/", views.article_detail, name="article-detail"),
     path(
         "editor/login/",
@@ -45,4 +46,9 @@ urlpatterns = [
     path("editor/inbox/<int:pk>/convert/", views.editor_letter_convert, name="editor-letter-convert"),
     path("editor/new/", views.editor_article_create, name="editor-article-create"),
     path("editor/<int:pk>/edit/", views.editor_article_edit, name="editor-article-edit"),
+    path(
+        "editor/<int:pk>/images/upload/",
+        views.editor_article_image_upload,
+        name="editor-article-image-upload",
+    ),
 ]
