@@ -117,10 +117,12 @@
     <div class="actions">
         {% if article.pk and article.status == 'published' %}
             <button class="btn" type="submit" name="action" value="save">Сохранить изменения</button>
+            <button class="btn btn--quiet" type="submit" name="action" value="preview" formtarget="_blank">Предпросмотр ↗</button>
             <a class="btn btn--quiet" href="{{ article.get_absolute_url }}" target="_blank">Открыть заметку</a>
             <button class="btn btn--danger" type="submit" name="action" value="draft">Снять с публикации</button>
         {% else %}
             <button class="btn" type="submit" name="action" value="publish">Опубликовать</button>
+            <button class="btn btn--quiet" type="submit" name="action" value="preview" formtarget="_blank">Предпросмотр ↗</button>
             <button class="btn btn--quiet" type="submit" name="action" value="draft">Сохранить черновик</button>
         {% endif %}
     </div>
@@ -138,33 +140,37 @@
             <button type="button" class="image-dialog__close" data-image-close aria-label="Закрыть">×</button>
         </div>
 
-        <div class="image-dialog__field">
-            <label for="{{ image_form.file.id_for_label }}">Файл</label>
-            {{ image_form.file }}
-            <img class="image-dialog__preview" data-image-preview alt="" hidden>
-            <span class="image-dialog__hint">JPEG, PNG, WebP или GIF · до 12 МБ.</span>
+        <div class="image-dialog__body">
+            <div class="image-dialog__field">
+                <label for="{{ image_form.file.id_for_label }}">Файл</label>
+                {{ image_form.file }}
+                <img class="image-dialog__preview" data-image-preview alt="" hidden>
+                <span class="image-dialog__hint">JPEG, PNG, WebP или GIF · до 12 МБ.</span>
+            </div>
+
+            <div class="image-dialog__field">
+                <label for="{{ image_form.caption.id_for_label }}">Подпись</label>
+                {{ image_form.caption }}
+                <span class="image-dialog__hint">Необязательно. Но редакция считает подписи самостоятельным жанром.</span>
+            </div>
+
+            <div class="image-dialog__field">
+                <label for="{{ image_form.alt_text.id_for_label }}">Описание изображения</label>
+                {{ image_form.alt_text }}
+                <span class="image-dialog__hint">Короткий alt-текст для тех, кто не видит изображение.</span>
+            </div>
+
+            <fieldset class="image-dialog__layout">
+                <legend>Ширина</legend>
+                <div class="image-dialog__choices">
+                    {% for radio in image_form.layout %}
+                        <label class="image-dialog__choice">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+
+            <div class="image-dialog__errors" data-image-errors role="alert" hidden></div>
         </div>
-
-        <div class="image-dialog__field">
-            <label for="{{ image_form.caption.id_for_label }}">Подпись</label>
-            {{ image_form.caption }}
-            <span class="image-dialog__hint">Необязательно. Но редакция считает подписи самостоятельным жанром.</span>
-        </div>
-
-        <div class="image-dialog__field">
-            <label for="{{ image_form.alt_text.id_for_label }}">Описание изображения</label>
-            {{ image_form.alt_text }}
-            <span class="image-dialog__hint">Короткий alt-текст для тех, кто не видит изображение.</span>
-        </div>
-
-        <fieldset class="image-dialog__layout">
-            <legend>Ширина</legend>
-            {% for radio in image_form.layout %}
-                <label class="image-dialog__choice">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>
-            {% endfor %}
-        </fieldset>
-
-        <div class="image-dialog__errors" data-image-errors role="alert" hidden></div>
 
         <div class="image-dialog__actions">
             <button class="btn" type="submit">Вставить в текст</button>
