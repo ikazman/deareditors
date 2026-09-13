@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Читательский билет — Dear Editors{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'news/reader-card.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="reader-card-page">
+    <div class="reader-card-page__head">
+        <p class="reader-card-page__rubric">Удостоверение читателя</p>
+        <h1>Читательский билет</h1>
+        <p class="reader-card-page__note">Редакция подтверждает: предъявитель допущен к внутреннему изданию.</p>
+    </div>
+
+    <article class="reader-card reader-card--{{ profile.cover_key }}" aria-label="Читательский билет {{ profile.ticket_number }}">
+        <div class="reader-card__top">
+            <div>
+                <div class="reader-card__nameplate">Dear Editors</div>
+                <div class="reader-card__edition">Внутреннее издание</div>
+            </div>
+            <div class="reader-card__kind">Читательский билет</div>
+        </div>
+
+        <div class="reader-card__body">
+            <div class="reader-card__label">Номер</div>
+            <div class="reader-card__number">{{ profile.ticket_number }}</div>
+
+            <dl class="reader-card__details">
+                <div>
+                    <dt>Читатель</dt>
+                    <dd>{{ reader_name }}</dd>
+                </div>
+                <div>
+                    <dt>Выдан</dt>
+                    <dd>{{ profile.issued_at|date:"d.m.Y" }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        <div class="reader-card__footer">Действителен до отдельного распоряжения редакции.</div>
+    </article>
+
+    <div class="reader-card-stats" aria-label="Статистика читателя">
+        <div class="reader-card-stat">
+            <span class="reader-card-stat__value">{{ articles_read }}</span>
+            <span class="reader-card-stat__label">Прочитано материалов</span>
+        </div>
+        <div class="reader-card-stat">
+            <span class="reader-card-stat__value">{{ days_visited }}</span>
+            <span class="reader-card-stat__label">Дней с изданием</span>
+        </div>
+    </div>
+
+    <section class="reader-card-marks" aria-labelledby="reader-marks-title">
+        <p class="reader-card-page__rubric" id="reader-marks-title">Отметки редакции</p>
+        <p>Пока без отметок. Редакция продолжает наблюдение.</p>
+    </section>
+</section>
+{% endblock %}
