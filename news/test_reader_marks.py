@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import AchievementUnlock, Article, EditorialLetter
+from .models import AchievementUnlock, Article, EditorialLetter, ReaderArticleView
 from .reader_identity import reader_fingerprint
 
 
@@ -100,6 +100,56 @@ class ReaderMarksTests(TestCase):
         self.assertContains(response, "Корреспондент III степени")
         self.assertContains(response, "Корреспондент II степени")
         self.assertContains(response, "Использовано третье письмо предъявителя.")
+
+    def test_tenth_used_letter_awards_first_degree(self):
+        fingerprint = reader_fingerprint(self.reader)
+        articles = []
+        for index in range(10):
+            article = Article.objects.create(
+                title=f"Корреспондентский материал {index + 1}",
+                body="Редакция использовала письмо.",
+                status=Article.Status.PUBLISHED,
+            )
+            articles.append(article)
+            EditorialLetter.objects.create(
+                body=f"Корреспондентский слух {index + 1}",
+                sender_fingerprint=fingerprint,
+                converted_article=article,
+            )
+        self.client.force_login(self.reader)
+
+        response = self.client.get(reverse("reader-card"))
+
+        first_degree = AchievementUnlock.objects.get(
+            user=self.reader,
+            code=AchievementUnlock.Code.CORRESPONDENT_I,
+        )
+        self.assertEqual(first_degree.unlocked_at, articles[9].published_at)
+        self.assertContains(response, "Корреспондент III степени")
+        self.assertContains(response, "Корреспондент II степени")
+        self.assertContains(response, "Корреспондент I степени")
+        self.assertContains(response, "Использовано десятое письмо предъявителя.")
+
+    def test_fiftieth_unique_read_awards_permanent_reader(self):
+        views = []
+        for index in range(50):
+            article = Article.objects.create(
+                title=f"Материал для чтения {index + 1}",
+                body="Редакция фиксирует чтение.",
+                status=Article.Status.PUBLISHED,
+            )
+            views.append(ReaderArticleView.objects.create(user=self.reader, article=article))
+
+        self.client.force_login(self.reader)
+        response = self.client.get(reverse("reader-card"))
+
+        mark = AchievementUnlock.objects.get(
+            user=self.reader,
+            code=AchievementUnlock.Code.PERMANENT_READER,
+        )
+        self.assertEqual(mark.unlocked_at, views[49].first_opened_at)
+        self.assertContains(response, "Постоянный читатель")
+        self.assertContains(response, "Прочитано пятьдесят материалов.")
 
     def test_draft_and_legacy_unlinked_letters_do_not_award_marks(self):
         draft = Article.objects.create(
