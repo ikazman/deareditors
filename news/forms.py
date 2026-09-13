@@ -3,7 +3,25 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 
 from .editorial_service import normalize_article_body
-from .models import Article, EditorialLetter, Invitation
+from .models import Article, ArticleImage, EditorialLetter, Invitation
+
+
+MAX_ARTICLE_IMAGE_SIZE = 12 * 1024 * 1024
+
+
+def detect_image_content_type(upload):
+    header = upload.read(16)
+    upload.seek(0)
+
+    if header.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if header.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if header.startswith((b"GIF87a", b"GIF89a")):
+        return "image/gif"
+    if len(header) >= 12 and header[:4] == b"RIFF" and header[8:12] == b"WEBP":
+        return "image/webp"
+    return None
 
 
 class ReaderAuthenticationForm(AuthenticationForm):
@@ -137,6 +155,45 @@ class ArticleForm(forms.ModelForm):
 
     def clean_body(self):
         return normalize_article_body(self.cleaned_data["body"])
+
+
+class ArticleImageForm(forms.ModelForm):
+    class Meta:
+        model = ArticleImage
+        fields = ("file", "caption", "alt_text", "layout")
+        widgets = {
+            "file": forms.ClearableFileInput(
+                attrs={
+                    "class": "image-dialog__file",
+                    "accept": "image/jpeg,image/png,image/webp,image/gif",
+                }
+            ),
+            "caption": forms.TextInput(
+                attrs={
+                    "class": "image-dialog__input",
+                    "placeholder": "Например: Фото предоставлено источником, пожелавшим остаться в столовой",
+                }
+            ),
+            "alt_text": forms.TextInput(
+                attrs={
+                    "class": "image-dialog__input",
+                    "placeholder": "Коротко опишите, что изображено",
+                }
+            ),
+            "layout": forms.RadioSelect(attrs={"class": "image-dialog__radio"}),
+        }
+
+    def clean_file(self):
+        upload = self.cleaned_data["file"]
+        if upload.size > MAX_ARTICLE_IMAGE_SIZE:
+            raise forms.ValidationError("Файл слишком большой. Максимум — 12 МБ.")
+
+        content_type = detect_image_content_type(upload)
+        if content_type is None:
+            raise forms.ValidationError("Редакция принимает JPEG, PNG, WebP и GIF.")
+
+        self.instance.content_type = content_type
+        return upload
 
 
 class EditorialLetterForm(forms.ModelForm):
