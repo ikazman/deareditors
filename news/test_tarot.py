@@ -141,7 +141,7 @@ class TarotEditorTests(TarotTestMixin, TestCase):
         self.assertContains(edit_response, draw.card_name)
         self.assertContains(edit_response, "Посмотреть черновик")
 
-    def test_published_tarot_article_shows_rubric_to_reader(self):
+    def test_published_tarot_article_uses_rubric_in_single_metadata_row(self):
         import_tarot_bundle(self.make_bundle())
         draw, _ = create_card_of_day(date(2026, 9, 13))
         article = draw.article
@@ -151,4 +151,7 @@ class TarotEditorTests(TarotTestMixin, TestCase):
         self.client.force_login(self.reader)
         response = self.client.get(article.get_absolute_url())
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, '<p class="article__rubric">Карта дня</p>', html=True)
+        self.assertContains(response, '<span class="stamp">13.09.2026</span>', html=True)
+        self.assertContains(response, '<span class="desk">Карта дня</span>', html=True)
+        self.assertNotContains(response, '<span class="desk">Дорогая редакция</span>', html=True)
+        self.assertNotContains(response, 'article__rubric')
