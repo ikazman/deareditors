@@ -22,6 +22,9 @@
                 {% endif %}
                 <span class="stamp">{{ letter.created_at|date:"d.m.Y · H:i" }}</span>
                 <span class="desk">{{ letter.sender_name|default:"Анонимно" }}</span>
+                {% if letter.anonymity_requested %}
+                    <span class="desk">Не называть автора</span>
+                {% endif %}
             </div>
 
             <div class="mail-row__body">{{ letter.body|linebreaks }}</div>
