@@ -7,6 +7,21 @@ from .models import ReaderArticleView, ReaderProfile
 
 
 TICKET_ATTEMPTS = 32
+MONTHS_GENITIVE = (
+    "",
+    "января",
+    "февраля",
+    "марта",
+    "апреля",
+    "мая",
+    "июня",
+    "июля",
+    "августа",
+    "сентября",
+    "октября",
+    "ноября",
+    "декабря",
+)
 
 
 def _new_ticket_number():
@@ -40,4 +55,5 @@ def reader_stats(user, profile):
         "articles_read": ReaderArticleView.objects.filter(user=user).count(),
         "days_with_publication": max((today - issued_date).days, 0),
         "issued_today": issued_date == today,
+        "reader_since_label": f"Читатель с {MONTHS_GENITIVE[issued_date.month]} {issued_date.year}",
     }

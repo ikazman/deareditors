@@ -199,6 +199,13 @@ class EditorialLetter(models.Model):
     body = models.TextField("сообщение")
     sender_name = models.CharField("имя", max_length=120, blank=True)
     contact = models.CharField("контакт", max_length=240, blank=True)
+    anonymity_requested = models.BooleanField("не называть автора", default=False)
+    sender_fingerprint = models.CharField(
+        "анонимный отпечаток отправителя",
+        max_length=64,
+        blank=True,
+        editable=False,
+    )
     status = models.CharField("статус", max_length=12, choices=Status.choices, default=Status.NEW)
     created_at = models.DateTimeField("получено", auto_now_add=True)
     reviewed_at = models.DateTimeField("просмотрено", blank=True, null=True)
@@ -367,3 +374,40 @@ class ReaderProfile(models.Model):
 
     def __str__(self):
         return f"{self.ticket_number} — {self.user}"
+
+
+class AchievementUnlock(models.Model):
+    class Code(models.TextChoices):
+        CORRESPONDENT_III = "correspondent_iii", "Корреспондент III степени"
+        CORRESPONDENT_II = "correspondent_ii", "Корреспондент II степени"
+        CORRESPONDENT_I = "correspondent_i", "Корреспондент I степени"
+        PERMANENT_READER = "permanent_reader", "Постоянный читатель"
+        ANONYMOUS_SOURCE = "anonymous_source", "Источник, пожелавший остаться неизвестным"
+        COMPLETE_MONTH = "complete_month", "Читатель без пропусков"
+        ARCHIVE_READER = "archive_reader", "Читатель архива"
+        CARD_DAY_SUBSCRIBER = "card_day_subscriber", "Постоянный подписчик рубрики"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name="читатель",
+        related_name="reader_marks",
+        on_delete=models.CASCADE,
+    )
+    code = models.CharField("отметка", max_length=32, choices=Code.choices)
+    title = models.CharField("название при выдаче", max_length=160, editable=False)
+    description = models.TextField("основание при выдаче", editable=False)
+    unlocked_at = models.DateTimeField("зафиксировано", default=timezone.now)
+
+    class Meta:
+        ordering = ["unlocked_at", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=("user", "code"),
+                name="unique_reader_achievement_unlock",
+            )
+        ]
+        verbose_name = "отметка редакции"
+        verbose_name_plural = "отметки редакции"
+
+    def __str__(self):
+        return f"{self.title} — {self.user}"

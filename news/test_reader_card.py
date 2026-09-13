@@ -51,7 +51,8 @@ class ReaderCardTests(TestCase):
 
         self.assertContains(response, "Выдан сегодня")
         self.assertContains(response, "Пока ни одного")
-        self.assertContains(response, "Пока без отметок. Редакция продолжает наблюдение.")
+        self.assertContains(response, response.context["reader_since_label"])
+        self.assertContains(response, "Пока без иных отметок. Редакция продолжает наблюдение.")
 
     def test_reader_card_shows_reading_and_ticket_age(self):
         first_article = Article.objects.create(
@@ -79,6 +80,7 @@ class ReaderCardTests(TestCase):
         self.assertEqual(response.context["days_with_publication"], 104)
         self.assertFalse(response.context["issued_today"])
         self.assertContains(response, "104")
+        self.assertContains(response, response.context["reader_since_label"])
 
     def test_accepting_invitation_issues_reader_profile(self):
         invitation = Invitation.objects.create(label="Новый читатель")

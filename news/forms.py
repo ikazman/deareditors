@@ -228,7 +228,7 @@ class TarotDeckImportForm(forms.Form):
 class EditorialLetterForm(forms.ModelForm):
     class Meta:
         model = EditorialLetter
-        fields = ("body", "sender_name", "contact")
+        fields = ("body", "sender_name", "contact", "anonymity_requested")
         widgets = {
             "body": forms.Textarea(
                 attrs={
@@ -250,4 +250,5 @@ class EditorialLetterForm(forms.ModelForm):
                     "placeholder": "Почта, Telegram или иной способ — если хотите ответа",
                 }
             ),
+            "anonymity_requested": forms.CheckboxInput(attrs={"class": "letter-checkbox"}),
         }

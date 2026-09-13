@@ -24,6 +24,8 @@ from .forms import (
 from .mcp_access import issue_mcp_key
 from .models import Article, ArticleImage, EditorialLetter, Invitation, MCPAccessKey, TarotCard, TarotDraw
 from .reader_activity import record_article_open, record_daily_visit
+from .reader_identity import reader_fingerprint
+from .reader_marks import sync_reader_marks
 from .reader_profile import get_or_create_reader_profile, reader_stats
 from .tarot_service import create_card_of_day, import_tarot_bundle, question_for_date, recent_draws
 
@@ -61,12 +63,14 @@ def article_detail(request, slug):
 def reader_card(request):
     profile = get_or_create_reader_profile(request.user)
     stats = reader_stats(request.user, profile)
+    marks = sync_reader_marks(request.user)
     return render(
         request,
         "news/reader_card.html",
         {
             "profile": profile,
             "reader_name": request.user.first_name or request.user.username,
+            "marks": marks,
             **stats,
         },
     )
@@ -96,7 +100,9 @@ def letter_create(request):
     if request.method == "POST":
         form = EditorialLetterForm(request.POST)
         if form.is_valid():
-            form.save()
+            letter = form.save(commit=False)
+            letter.sender_fingerprint = reader_fingerprint(request.user)
+            letter.save()
             return redirect("letter-sent")
     else:
         form = EditorialLetterForm()

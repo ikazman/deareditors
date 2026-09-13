@@ -32,6 +32,12 @@
             {{ form.contact.errors }}
         </div>
 
+        <label class="letter-anonymity" for="{{ form.anonymity_requested.id_for_label }}">
+            {{ form.anonymity_requested }}
+            <span>Не называть автора, если письмо станет заметкой</span>
+        </label>
+        {{ form.anonymity_requested.errors }}
+
         <p class="letter-privacy">Имя и контакт необязательны. В публикацию они автоматически не попадут.</p>
         <button class="letter-submit" type="submit">Отправить слух</button>
     </form>
