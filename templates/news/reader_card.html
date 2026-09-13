@@ -12,7 +12,7 @@
     <div class="reader-card-page__head">
         <p class="reader-card-page__rubric">Удостоверение читателя</p>
         <h1>Читательский билет</h1>
-        <p class="reader-card-page__note">Редакция подтверждает: предъявитель допущен к внутреннему изданию.</p>
+        <p class="reader-card-page__note">Редакция подтверждает, что предъявитель допущен к внутреннему изданию.</p>
     </div>
 
     <article class="reader-card reader-card--{{ profile.cover_key }}" aria-label="Читательский билет {{ profile.ticket_number }}">
@@ -21,7 +21,7 @@
                 <div class="reader-card__nameplate">Dear Editors</div>
                 <div class="reader-card__edition">Внутреннее издание</div>
             </div>
-            <div class="reader-card__kind">Читательский билет</div>
+            <div class="reader-card__kind">Серия {{ profile.ticket_number|slice:":5" }}</div>
         </div>
 
         <div class="reader-card__body">
@@ -43,14 +43,14 @@
         <div class="reader-card__footer">Действителен до отдельного распоряжения редакции.</div>
     </article>
 
-    <div class="reader-card-stats" aria-label="Статистика читателя">
+    <div class="reader-card-stats" aria-label="Сведения о читателе">
         <div class="reader-card-stat">
-            <span class="reader-card-stat__value">{{ articles_read }}</span>
-            <span class="reader-card-stat__label">Прочитано материалов</span>
+            <span class="reader-card-stat__value">{% if issued_today %}Выдан сегодня{% else %}{{ days_with_publication }}{% endif %}</span>
+            <span class="reader-card-stat__label">Дней с изданием</span>
         </div>
         <div class="reader-card-stat">
-            <span class="reader-card-stat__value">{{ days_visited }}</span>
-            <span class="reader-card-stat__label">Дней с изданием</span>
+            <span class="reader-card-stat__value">{% if articles_read %}{{ articles_read }}{% else %}Пока ни одного{% endif %}</span>
+            <span class="reader-card-stat__label">Прочитано материалов</span>
         </div>
     </div>
 
