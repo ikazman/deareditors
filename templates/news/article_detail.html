@@ -1,24 +1,10 @@
 {% extends 'base.html' %}
-{% load editorial_markdown %}
 
 {% block title %}{{ article.title }} — Dear Editors{% endblock %}
 
 {% block content %}
 <article class="article">
     <a class="article-back" href="{% url 'article-list' %}">К редакционной ленте</a>
-
-    <div class="article__byline">
-        <span class="stamp">{{ article.published_at|date:"d.m.Y" }}</span>
-        <span class="desk">{{ article.author_name }}</span>
-    </div>
-
-    <h1 class="article__title">{{ article.title }}</h1>
-
-    {% if article.lead %}<p class="article__lead">{{ article.lead }}</p>{% endif %}
-
-    <hr class="article__rule">
-
-    <div class="article__body">{{ article|editorial_article }}</div>
-    <p class="article__signoff">Будем наблюдать.</p>
+    {% include 'news/_article_content.html' %}
 </article>
 {% endblock %}
