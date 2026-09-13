@@ -348,3 +348,22 @@ class ReaderDailyVisit(models.Model):
 
     def __str__(self):
         return f"{self.user} — {self.visit_date:%d.%m.%Y}"
+
+
+class ReaderProfile(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        verbose_name="читатель",
+        related_name="reader_profile",
+        on_delete=models.CASCADE,
+    )
+    ticket_number = models.CharField("номер билета", max_length=10, unique=True, editable=False)
+    issued_at = models.DateTimeField("выдан", default=timezone.now)
+    cover_key = models.CharField("обложка", max_length=32, default="classic")
+
+    class Meta:
+        verbose_name = "читательский билет"
+        verbose_name_plural = "читательские билеты"
+
+    def __str__(self):
+        return f"{self.ticket_number} — {self.user}"
