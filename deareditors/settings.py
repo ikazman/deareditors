@@ -74,8 +74,10 @@ WSGI_APPLICATION = "deareditors.wsgi.application"
 
 if DEBUG:
     default_db_path = BASE_DIR / "db.sqlite3"
+    default_media_root = BASE_DIR / "media"
 else:
     default_db_path = Path("/data/db.sqlite3")
+    default_media_root = Path("/data/media")
 
 DATABASES = {
     "default": {
@@ -99,6 +101,7 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+MEDIA_ROOT = Path(os.environ.get("DJANGO_MEDIA_ROOT", str(default_media_root)))
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
