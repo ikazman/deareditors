@@ -108,7 +108,7 @@ class ArticleForm(forms.ModelForm):
             "title": forms.Textarea(
                 attrs={
                     "class": "textarea input--display",
-                    "rows": 2,
+                    "rows": 1,
                     "placeholder": "О чем дошел слух",
                     "autofocus": True,
                 }
@@ -123,7 +123,7 @@ class ArticleForm(forms.ModelForm):
             "body": forms.Textarea(
                 attrs={
                     "class": "textarea textarea--body",
-                    "rows": 12,
+                    "rows": 5,
                     "placeholder": "До дорогой редакции дошел слух, что…",
                 }
             ),

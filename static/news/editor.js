@@ -1,13 +1,40 @@
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("textarea.textarea").forEach((textarea) => {
-    const growIfNeeded = () => {
-      if (textarea.scrollHeight > textarea.clientHeight + 1) {
-        textarea.style.height = `${textarea.scrollHeight}px`;
+    const initialHeight = textarea.getBoundingClientRect().height;
+    let manualFloor = initialHeight;
+    let lastAppliedHeight = initialHeight;
+    let applyingHeight = false;
+
+    const fitToContent = () => {
+      const currentHeight = textarea.getBoundingClientRect().height;
+      if (!applyingHeight && Math.abs(currentHeight - lastAppliedHeight) > 2) {
+        manualFloor = currentHeight;
       }
+
+      applyingHeight = true;
+      textarea.style.height = "auto";
+      const nextHeight = Math.max(manualFloor, textarea.scrollHeight);
+      textarea.style.height = `${Math.ceil(nextHeight)}px`;
+      lastAppliedHeight = textarea.getBoundingClientRect().height;
+
+      requestAnimationFrame(() => {
+        applyingHeight = false;
+      });
     };
 
-    growIfNeeded();
-    textarea.addEventListener("input", growIfNeeded);
+    if (window.ResizeObserver) {
+      const observer = new ResizeObserver(() => {
+        if (applyingHeight) return;
+        const currentHeight = textarea.getBoundingClientRect().height;
+        if (Math.abs(currentHeight - lastAppliedHeight) > 2) {
+          manualFloor = currentHeight;
+        }
+      });
+      observer.observe(textarea);
+    }
+
+    fitToContent();
+    textarea.addEventListener("input", fitToContent);
   });
 
   const body = document.querySelector("textarea.textarea--body");

@@ -25,3 +25,15 @@
 .editor-tool:hover{color:var(--ink);background:var(--paper-sunk)}
 .editor-tool:focus-visible{outline:1px solid var(--rubric);outline-offset:1px;color:var(--ink)}
 .editor-toolbar__rule{width:1px;height:1.1rem;margin:0 .3rem;background:var(--rule)}
+
+@media (max-width:40rem){
+  .textarea--lead,.textarea--body{min-height:0}
+  .editor-toolbar{
+    position:sticky;
+    top:0;
+    z-index:10;
+    margin-top:0;
+    padding-top:.45rem;
+    background:var(--paper);
+  }
+}
