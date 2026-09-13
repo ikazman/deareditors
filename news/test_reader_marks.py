@@ -258,4 +258,4 @@ class ReaderMarksTests(TestCase):
         response = self.client.get(reverse("reader-card"))
 
         self.assertFalse(AchievementUnlock.objects.filter(user=self.reader).exists())
-        self.assertContains(response, "Пока без отметок. Редакция продолжает наблюдение.")
+        self.assertContains(response, "Пока без иных отметок. Редакция продолжает наблюдение.")
