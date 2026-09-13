@@ -117,12 +117,12 @@
     <div class="actions">
         {% if article.pk and article.status == 'published' %}
             <button class="btn" type="submit" name="action" value="save">Сохранить изменения</button>
-            <button class="btn btn--quiet" type="submit" name="action" value="preview" formtarget="_blank">Предпросмотр ↗</button>
-            <a class="btn btn--quiet" href="{{ article.get_absolute_url }}" target="_blank">Открыть заметку</a>
+            <button class="btn btn--quiet" type="submit" name="action" value="preview" formtarget="_blank">Посмотреть черновик ↗</button>
+            <a class="btn btn--quiet" href="{{ article.get_absolute_url }}" target="_blank">Открыть в издании ↗</a>
             <button class="btn btn--danger" type="submit" name="action" value="draft">Снять с публикации</button>
         {% else %}
             <button class="btn" type="submit" name="action" value="publish">Опубликовать</button>
-            <button class="btn btn--quiet" type="submit" name="action" value="preview" formtarget="_blank">Предпросмотр ↗</button>
+            <button class="btn btn--quiet" type="submit" name="action" value="preview" formtarget="_blank">Посмотреть черновик ↗</button>
             <button class="btn btn--quiet" type="submit" name="action" value="draft">Сохранить черновик</button>
         {% endif %}
     </div>
