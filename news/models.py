@@ -199,6 +199,7 @@ class EditorialLetter(models.Model):
     body = models.TextField("сообщение")
     sender_name = models.CharField("имя", max_length=120, blank=True)
     contact = models.CharField("контакт", max_length=240, blank=True)
+    anonymity_requested = models.BooleanField("не называть автора", default=False)
     sender_fingerprint = models.CharField(
         "анонимный отпечаток отправителя",
         max_length=64,
@@ -381,6 +382,10 @@ class AchievementUnlock(models.Model):
         CORRESPONDENT_II = "correspondent_ii", "Корреспондент II степени"
         CORRESPONDENT_I = "correspondent_i", "Корреспондент I степени"
         PERMANENT_READER = "permanent_reader", "Постоянный читатель"
+        ANONYMOUS_SOURCE = "anonymous_source", "Источник, пожелавший остаться неизвестным"
+        COMPLETE_MONTH = "complete_month", "Читатель без пропусков"
+        ARCHIVE_READER = "archive_reader", "Читатель архива"
+        CARD_DAY_SUBSCRIBER = "card_day_subscriber", "Постоянный подписчик рубрики"
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -416,5 +421,9 @@ class AchievementUnlock(models.Model):
             self.Code.CORRESPONDENT_II: "Использовано третье письмо предъявителя.",
             self.Code.CORRESPONDENT_I: "Использовано десятое письмо предъявителя.",
             self.Code.PERMANENT_READER: "Прочитано пятьдесят материалов.",
+            self.Code.ANONYMOUS_SOURCE: "Письмо предъявителя стало заметкой без раскрытия источника.",
+            self.Code.COMPLETE_MONTH: "Прочитаны все материалы, вышедшие за календарный месяц.",
+            self.Code.ARCHIVE_READER: "Открыт материал старше трех месяцев.",
+            self.Code.CARD_DAY_SUBSCRIBER: "Прочитано тридцать выпусков рубрики «Карта дня».",
         }
         return descriptions[self.code]
