@@ -41,7 +41,7 @@ class ArticleImageTests(TestCase):
             content_type="image/png",
         )
 
-    def test_editor_can_upload_image_and_receive_marker(self):
+    def test_editor_can_upload_image_and_receive_readable_marker(self):
         self.client.force_login(self.editor)
         response = self.client.post(
             reverse("editor-article-image-upload", kwargs={"pk": self.article.pk}),
@@ -56,10 +56,38 @@ class ArticleImageTests(TestCase):
         self.assertEqual(response.status_code, 201)
         payload = response.json()
         image = ArticleImage.objects.get()
-        self.assertEqual(payload["marker"], image.marker)
+        self.assertEqual(image.marker_index, 1)
+        self.assertEqual(image.marker, "[[фото 1]]")
+        self.assertEqual(payload["marker"], "[[фото 1]]")
         self.assertEqual(image.content_type, "image/png")
         self.assertEqual(image.layout, ArticleImage.Layout.WIDE)
         self.assertTrue(image.file.name.endswith(".png"))
+
+    def test_photo_numbers_do_not_shift_after_deletion(self):
+        first = ArticleImage.objects.create(
+            article=self.article,
+            file="article-images/one.png",
+            alt_text="Первое",
+            content_type="image/png",
+        )
+        second = ArticleImage.objects.create(
+            article=self.article,
+            file="article-images/two.png",
+            alt_text="Второе",
+            content_type="image/png",
+        )
+        self.assertEqual(first.marker, "[[фото 1]]")
+        self.assertEqual(second.marker, "[[фото 2]]")
+
+        first.delete()
+        third = ArticleImage.objects.create(
+            article=self.article,
+            file="article-images/three.png",
+            alt_text="Третье",
+            content_type="image/png",
+        )
+        self.assertEqual(second.marker, "[[фото 2]]")
+        self.assertEqual(third.marker, "[[фото 3]]")
 
     def test_upload_rejects_non_image_content(self):
         self.client.force_login(self.editor)
@@ -119,7 +147,8 @@ class ArticleImageTests(TestCase):
             alt_text="Чужое изображение",
             content_type="image/png",
         )
-        self.article.body = f"До изображения.\n\n{image.marker}\n\nПосле изображения.\n\n{foreign_image.marker}"
+        foreign_legacy_marker = f"[[image:{foreign_image.pk}]]"
+        self.article.body = f"До изображения.\n\n{image.marker}\n\nПосле изображения.\n\n{foreign_legacy_marker}"
         self.article.save()
 
         html = str(editorial_article(self.article))
@@ -130,3 +159,16 @@ class ArticleImageTests(TestCase):
         self.assertNotIn(reverse("article-image", kwargs={"pk": foreign_image.pk}), html)
         self.assertIn("До изображения.", html)
         self.assertIn("После изображения.", html)
+
+    def test_legacy_uuid_marker_for_owned_image_still_renders(self):
+        image = ArticleImage.objects.create(
+            article=self.article,
+            file="article-images/legacy.png",
+            alt_text="Старый маркер",
+            content_type="image/png",
+        )
+        self.article.body = f"[[image:{image.pk}]]"
+        self.article.save()
+
+        html = str(editorial_article(self.article))
+        self.assertIn(reverse("article-image", kwargs={"pk": image.pk}), html)
