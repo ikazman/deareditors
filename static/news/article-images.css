@@ -44,6 +44,23 @@
   text-transform:uppercase;
 }
 
+.article-back--button{
+  padding:0 0 1px;
+  border:0;
+  border-bottom:1px solid var(--rule);
+  border-radius:0;
+  background:transparent;
+  color:var(--ink-soft);
+  font:inherit;
+  font-size:.78rem;
+  cursor:pointer;
+}
+
+.article-back--button:hover{
+  color:var(--ink);
+  border-bottom-color:var(--ink);
+}
+
 .editor-tool:disabled{
   opacity:.38;
   cursor:not-allowed;
