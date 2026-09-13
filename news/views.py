@@ -60,7 +60,7 @@ def article_detail(request, slug):
 @login_required
 def reader_card(request):
     profile = get_or_create_reader_profile(request.user)
-    stats = reader_stats(request.user, profile)
+    stats = reader_stats(request.user)
     return render(
         request,
         "news/reader_card.html",
@@ -134,6 +134,7 @@ def invite_accept(request, token):
                 invitation.accepted_at = timezone.now()
                 invitation.accepted_by = user
                 invitation.save(update_fields=["accepted_at", "accepted_by"])
+                get_or_create_reader_profile(user)
 
             auth_login(request, user)
             messages.success(request, "Приглашение принято. Редакционная лента открыта.")
