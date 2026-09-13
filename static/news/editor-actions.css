@@ -1,0 +1,29 @@
+.actions{
+  width:min(var(--read),calc(100vw - 2 * var(--gutter)));
+  max-width:none;
+  flex-wrap:nowrap;
+  gap:1.2rem;
+}
+
+.actions .btn{
+  white-space:nowrap;
+}
+
+.actions .btn--danger{
+  flex:0 0 auto;
+  margin-left:auto;
+}
+
+@media (max-width:40rem){
+  .actions{
+    width:100%;
+    flex-wrap:wrap;
+    gap:.85rem 1.1rem;
+  }
+
+  .actions .btn--danger{
+    flex-basis:100%;
+    width:max-content;
+    margin:.7rem 0 0;
+  }
+}
