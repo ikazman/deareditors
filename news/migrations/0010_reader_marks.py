@@ -13,6 +13,11 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name="editorialletter",
+            name="anonymity_requested",
+            field=models.BooleanField(default=False, verbose_name="не называть автора"),
+        ),
+        migrations.AddField(
+            model_name="editorialletter",
             name="sender_fingerprint",
             field=models.CharField(
                 blank=True,
@@ -41,6 +46,10 @@ class Migration(migrations.Migration):
                             ("correspondent_ii", "Корреспондент II степени"),
                             ("correspondent_i", "Корреспондент I степени"),
                             ("permanent_reader", "Постоянный читатель"),
+                            ("anonymous_source", "Источник, пожелавший остаться неизвестным"),
+                            ("complete_month", "Читатель без пропусков"),
+                            ("archive_reader", "Читатель архива"),
+                            ("card_day_subscriber", "Постоянный подписчик рубрики"),
                         ],
                         max_length=32,
                         verbose_name="отметка",
