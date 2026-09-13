@@ -85,8 +85,9 @@ class Command(BaseCommand):
             article.refresh_from_db()
             articles.append(article)
 
-        # Еще 20 обычных материалов. Первые десять считаются выросшими из писем
-        # одного псевдонимного корреспондента.
+        # Еще 20 обычных материалов. Самый старый нужен только для отметки архива;
+        # следующие десять считаются выросшими из писем одного корреспондента.
+        # Поэтому протокольные отметки корреспондента не предшествуют выдаче билета.
         fingerprint = reader_fingerprint(reader)
         for index in range(20):
             if index == 0:
@@ -108,12 +109,12 @@ class Command(BaseCommand):
             article.refresh_from_db()
             articles.append(article)
 
-            if index < 10:
+            if 1 <= index <= 10:
                 EditorialLetter.objects.create(
-                    body=f"[reader-demo] Письмо корреспондента № {index + 1}",
-                    sender_name="Анна" if index == 0 else "",
+                    body=f"[reader-demo] Письмо корреспондента № {index}",
+                    sender_name="Анна" if index == 1 else "",
                     contact="",
-                    anonymity_requested=index == 0,
+                    anonymity_requested=index == 1,
                     sender_fingerprint=fingerprint,
                     status=EditorialLetter.Status.REVIEWED,
                     reviewed_at=published_at - timedelta(hours=2),
