@@ -76,8 +76,8 @@ class ReaderCardTests(TestCase):
             {
                 "username": "invited-reader",
                 "first_name": "Ирина",
-                "password1": "invited-reader-pass-9182",
-                "password2": "invited-reader-pass-9182",
+                "password1": "MosaicRiver!9182",
+                "password2": "MosaicRiver!9182",
             },
         )
 
