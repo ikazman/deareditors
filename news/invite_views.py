@@ -60,17 +60,20 @@ def _invite_description(invitation) -> str:
 
 
 def _invite_context(request, invitation, **extra):
-    preview_path = reverse("invite-preview", kwargs={"token": invitation.token})
-    preview_url = request.build_absolute_uri(
-        f"{preview_path}?v={INVITE_PREVIEW_VERSION}"
+    preview_path = reverse(
+        "invite-preview",
+        kwargs={"token": invitation.token, "version": INVITE_PREVIEW_VERSION},
     )
     context = {
         "invitation": invitation,
         "invite_reference": invite_reference(invitation),
         "invite_series": invite_series(invitation),
         "invite_status_label": _invite_status_label(invitation),
-        "invite_url": request.build_absolute_uri(invitation.get_absolute_url()),
-        "invite_preview_url": preview_url,
+        # Keep og:url identical to the URL a messenger actually fetched. The
+        # editor adds ?preview=<version> to share links so a failed messenger
+        # page cache can be invalidated without minting another invitation.
+        "invite_url": request.build_absolute_uri(),
+        "invite_preview_url": request.build_absolute_uri(preview_path),
         "invite_preview_alt": INVITE_PREVIEW_ALT,
         "invite_description": _invite_description(invitation),
     }
@@ -123,14 +126,26 @@ def invite_accept(request, token):
     )
 
 
-def invite_preview(request, token):
-    invitation = get_object_or_404(Invitation, token=token)
-    if request.GET.get("v") != str(INVITE_PREVIEW_VERSION):
-        raise Http404
-
+def _preview_response(invitation):
     payload = render_invite_preview(invitation)
     response = HttpResponse(payload, content_type="image/png")
     response["Cache-Control"] = "public, max-age=31536000, immutable"
-    response["Content-Disposition"] = 'inline; filename="dear-editors-invite.png"'
+    response["Content-Length"] = str(len(payload))
     response["X-Content-Type-Options"] = "nosniff"
     return response
+
+
+def invite_preview(request, token, version):
+    if version != INVITE_PREVIEW_VERSION:
+        raise Http404
+    invitation = get_object_or_404(Invitation, token=token)
+    return _preview_response(invitation)
+
+
+def invite_preview_legacy(request, token):
+    # Keep already-issued v3 image URLs alive while new pages use a version in
+    # the path. This endpoint can go away after old messenger caches expire.
+    if request.GET.get("v") not in {"3", str(INVITE_PREVIEW_VERSION)}:
+        raise Http404
+    invitation = get_object_or_404(Invitation, token=token)
+    return _preview_response(invitation)
