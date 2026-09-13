@@ -60,7 +60,7 @@ def article_detail(request, slug):
 @login_required
 def reader_card(request):
     profile = get_or_create_reader_profile(request.user)
-    stats = reader_stats(request.user)
+    stats = reader_stats(request.user, profile)
     return render(
         request,
         "news/reader_card.html",
