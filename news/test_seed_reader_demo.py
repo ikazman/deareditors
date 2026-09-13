@@ -14,8 +14,8 @@ class SeedReaderDemoTests(TestCase):
 
         reader = get_user_model().objects.get(username=DEMO_USERNAME)
         fingerprint = reader_fingerprint(reader)
+        profile = ReaderProfile.objects.get(user=reader)
         self.assertTrue(reader.check_password("reader-demo-9182"))
-        self.assertTrue(ReaderProfile.objects.filter(user=reader).exists())
         self.assertEqual(ReaderArticleView.objects.filter(user=reader).count(), 50)
         self.assertEqual(
             Article.objects.filter(slug__startswith=DEMO_PREFIX).count(),
@@ -37,6 +37,18 @@ class SeedReaderDemoTests(TestCase):
                 AchievementUnlock.Code.ARCHIVE_READER,
                 AchievementUnlock.Code.CARD_DAY_SUBSCRIBER,
             },
+        )
+        self.assertFalse(
+            AchievementUnlock.objects.filter(
+                user=reader,
+                unlocked_at__lt=profile.issued_at,
+            ).exists()
+        )
+        self.assertFalse(
+            AchievementUnlock.objects.filter(user=reader, title="").exists()
+        )
+        self.assertFalse(
+            AchievementUnlock.objects.filter(user=reader, description="").exists()
         )
 
         call_command("seed_reader_demo", verbosity=0)
