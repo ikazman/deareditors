@@ -101,3 +101,28 @@ class ReaderActivityTests(TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertFalse(ReaderArticleView.objects.filter(user=self.reader).exists())
         self.assertFalse(ReaderDailyVisit.objects.filter(user=self.reader).exists())
+
+    def test_editor_dashboard_shows_unique_readers_and_total_opens(self):
+        self.client.force_login(self.reader)
+        self.client.get(self.article.get_absolute_url())
+        self.client.get(self.article.get_absolute_url())
+
+        self.client.force_login(self.other_reader)
+        self.client.get(self.article.get_absolute_url())
+
+        self.client.force_login(self.editor)
+        response = self.client.get(reverse("editor-dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "2 читателей · 3 открытий")
+
+    def test_readership_metrics_are_not_exposed_to_readers(self):
+        self.client.force_login(self.reader)
+        self.client.get(self.article.get_absolute_url())
+        self.client.get(self.article.get_absolute_url())
+
+        feed = self.client.get(reverse("article-list"))
+        detail = self.client.get(self.article.get_absolute_url())
+
+        self.assertNotContains(feed, "1 читателей · 2 открытий")
+        self.assertNotContains(detail, "1 читателей · 2 открытий")
