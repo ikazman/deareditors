@@ -44,6 +44,7 @@ def _letter_payload(letter: EditorialLetter) -> dict:
         "body": letter.body,
         "sender_name": letter.sender_name,
         "contact": letter.contact,
+        "anonymity_requested": letter.anonymity_requested,
         "status": letter.status,
         "created_at": letter.created_at.isoformat(),
         "reviewed_at": letter.reviewed_at.isoformat() if letter.reviewed_at else None,
