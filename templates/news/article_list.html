@@ -12,6 +12,7 @@
 <section class="feed" aria-label="Публикации">
     {% for article in articles %}
         <article class="entry">
+            {% if article.rubric %}<p class="entry__rubric">{{ article.rubric }}</p>{% endif %}
             <div class="byline">
                 <span class="stamp">{{ article.published_at|date:"d.m.Y" }}</span>
                 <span class="desk">{{ article.author_name }}</span>
