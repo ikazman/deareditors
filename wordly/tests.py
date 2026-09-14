@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import SimpleTestCase, TestCase
@@ -93,7 +95,7 @@ class WordlyViewTests(TestCase):
 
     def test_editor_can_set_future_word_manually(self):
         self.client.force_login(self.editor)
-        target_date = self.today + timezone.timedelta(days=1)
+        target_date = self.today + timedelta(days=1)
         response = self.client.post(
             reverse("editor-wordly"),
             {"date": target_date.isoformat(), "word": "СУДЬЯ"},
