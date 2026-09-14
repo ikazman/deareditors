@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Вордли — Dear Editors{% endblock %}
+{% block title %}{% if article %}{{ article.title }}{% else %}Вордли{% endif %} — Dear Editors{% endblock %}
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'wordly/wordly.css' %}">
 <script src="{% static 'wordly/wordly.js' %}" defer></script>
@@ -9,80 +9,78 @@
 
 {% block content %}
 <section class="wordly-page">
-    <a class="article-back" href="{% url 'article-list' %}">К изданию</a>
-    <p class="rubric">Ежедневная рубрика</p>
-    <h1 class="wordly-title">Вордли</h1>
-    <p class="wordly-lead">Пять букв. Шесть попыток.</p>
+    <a class="article-back" href="{% url 'article-list' %}">К редакционной ленте</a>
+    <div class="article__byline">
+        <span class="stamp">{{ daily_word.date|date:"d.m.Y" }}</span>
+        <span class="stamp" aria-hidden="true">·</span>
+        <span class="desk">{% if article and article.rubric %}{{ article.rubric }}{% else %}Вордли{% endif %}</span>
+    </div>
+    <h1 class="article__title">{% if article %}{{ article.title }}{% else %}Редакция загадала слово{% endif %}</h1>
+    <p class="article__lead">{% if article and article.lead %}{{ article.lead }}{% else %}Пять букв. Шесть попыток.{% endif %}</p>
+    <hr class="article__rule">
 
-    {% if not daily_word_exists %}
-        <div class="wordly-empty">
-            <p>Редакция пока не загадала слово на сегодня.</p>
-            {% if request.user.is_staff %}<a class="more" href="{% url 'editor-wordly' %}">Задать слово дня</a>{% endif %}
+    <div class="wordly-board" aria-label="Игровое поле">
+        {% for row in board %}
+            <div class="wordly-row{% if forloop.counter0 == active_row %} wordly-row--active{% endif %}">
+                {% for cell in row %}
+                    <span class="wordly-cell wordly-cell--{{ cell.state }}"{% if forloop.parentloop.counter0 == active_row %} data-active-cell{% endif %}>{{ cell.letter }}</span>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if game and game.won %}
+        <div class="wordly-result">
+            <strong>Слово найдено.</strong>
+            <span>Попыток: {{ attempts_used }}.</span>
+        </div>
+    {% elif finished %}
+        <div class="wordly-result">
+            <strong>Попытки закончились.</strong>
+            <span>Слово: {{ answer }}.</span>
         </div>
     {% else %}
-        <div class="wordly-board" aria-label="Игровое поле">
-            {% for row in board %}
-                <div class="wordly-row{% if forloop.counter0 == active_row %} wordly-row--active{% endif %}">
-                    {% for cell in row %}
-                        <span class="wordly-cell wordly-cell--{{ cell.state }}"{% if forloop.parentloop.counter0 == active_row %} data-active-cell{% endif %}>{{ cell.letter }}</span>
-                    {% endfor %}
-                </div>
-            {% endfor %}
-        </div>
-
-        {% if game and game.won %}
-            <div class="wordly-result">
-                <strong>Слово найдено.</strong>
-                <span>Попыток: {{ attempts_used }}.</span>
+        <form class="wordly-form" method="post" data-wordly-form>
+            {% csrf_token %}
+            <label for="wordly-guess">Ваши пять букв</label>
+            <div class="wordly-form__row">
+                <input
+                    id="wordly-guess"
+                    class="wordly-input"
+                    type="text"
+                    name="guess"
+                    maxlength="5"
+                    minlength="5"
+                    autocomplete="off"
+                    autocapitalize="characters"
+                    spellcheck="false"
+                    inputmode="text"
+                    value="{{ form.guess.value|default:'' }}"
+                    data-wordly-input
+                    autofocus
+                >
+                <button class="wordly-submit" type="submit">Проверить</button>
             </div>
-        {% elif finished %}
-            <div class="wordly-result">
-                <strong>Попытки закончились.</strong>
-                <span>Слово: {{ answer }}.</span>
-            </div>
-        {% else %}
-            <form class="wordly-form" method="post" data-wordly-form>
-                {% csrf_token %}
-                <label for="wordly-guess">Ваши пять букв</label>
-                <div class="wordly-form__row">
-                    <input
-                        id="wordly-guess"
-                        class="wordly-input"
-                        type="text"
-                        name="guess"
-                        maxlength="5"
-                        minlength="5"
-                        autocomplete="off"
-                        autocapitalize="characters"
-                        spellcheck="false"
-                        inputmode="text"
-                        value="{{ form.guess.value|default:'' }}"
-                        data-wordly-input
-                        autofocus
-                    >
-                    <button class="wordly-submit" type="submit">Проверить</button>
-                </div>
-                {% if form.guess.errors %}<div class="wordly-errors">{{ form.guess.errors }}</div>{% endif %}
-            </form>
-        {% endif %}
-
-        <div class="wordly-keyboard" aria-label="Клавиатура">
-            {% for row in keyboard_rows %}
-                <div class="wordly-keyboard__row">
-                    {% for key in row %}
-                        <button class="wordly-key wordly-key--{{ key.state }}" type="button" data-wordly-key="{{ key.letter }}"{% if finished %} disabled{% endif %}>{{ key.letter }}</button>
-                    {% endfor %}
-                </div>
-            {% endfor %}
-            {% if not finished %}
-                <div class="wordly-keyboard__controls">
-                    <button class="wordly-key wordly-key--control" type="button" data-wordly-backspace aria-label="Удалить последнюю букву">←</button>
-                    <button class="wordly-key wordly-key--control" type="button" data-wordly-enter aria-label="Проверить попытку">↵</button>
-                </div>
-            {% endif %}
-        </div>
-
-        <p class="wordly-note">Зеленый — буква на месте. Желтый — буква есть в слове. Серый — такой буквы больше нет.</p>
+            {% if form.guess.errors %}<div class="wordly-errors">{{ form.guess.errors }}</div>{% endif %}
+        </form>
     {% endif %}
+
+    <div class="wordly-keyboard" aria-label="Клавиатура">
+        {% for row in keyboard_rows %}
+            <div class="wordly-keyboard__row">
+                {% for key in row %}
+                    <button class="wordly-key wordly-key--{{ key.state }}" type="button" data-wordly-key="{{ key.letter }}"{% if finished %} disabled{% endif %}>{{ key.letter }}</button>
+                {% endfor %}
+            </div>
+        {% endfor %}
+        {% if not finished %}
+            <div class="wordly-keyboard__controls">
+                <button class="wordly-key wordly-key--control" type="button" data-wordly-backspace aria-label="Удалить последнюю букву">←</button>
+                <button class="wordly-key wordly-key--control" type="button" data-wordly-enter aria-label="Проверить попытку">↵</button>
+            </div>
+        {% endif %}
+    </div>
+
+    <p class="wordly-note">Зеленый — буква на месте. Желтый — буква есть в слове. Серый — такой буквы больше нет.</p>
 </section>
 {% endblock %}
