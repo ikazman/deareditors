@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Архив Вордли — Dear Editors{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'wordly/wordly.css' %}">{% endblock %}
+
+{% block content %}
+<section class="wordly-page wordly-archive">
+    <a class="article-back" href="{% url 'article-list' %}">К редакционной ленте</a>
+    <p class="rubric">Архив рубрики</p>
+    <h1 class="wordly-title">Вордли</h1>
+    <p class="wordly-lead">Здесь остаются уже вышедшие слова. Пропущенный выпуск можно сыграть позже.</p>
+
+    <div class="wordly-archive__list">
+        {% for entry in entries %}
+            <a class="wordly-archive__item" href="{{ entry.daily_word.get_absolute_url }}">
+                <span class="wordly-archive__date">{{ entry.daily_word.date|date:"d.m.Y" }}</span>
+                <span class="wordly-archive__title">{% if entry.daily_word.article %}{{ entry.daily_word.article.title }}{% else %}Редакция загадала слово{% endif %}</span>
+                <span class="wordly-archive__status">{{ entry.status }}</span>
+            </a>
+        {% empty %}
+            <div class="wordly-empty">
+                <p>В архиве пока нет сыгранных выпусков.</p>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}
