@@ -1,12 +1,14 @@
 from asgiref.sync import async_to_sync
 from django.contrib.auth import get_user_model
+from django.db import connection
 from django.test import SimpleTestCase, TestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from mcp import Client
 
-from deareditors.mcp_server import mcp
+from deareditors.mcp_server import _list_article_payloads, _list_inbox_payloads, mcp
 from news.mcp_access import authenticate_mcp_key, issue_mcp_key
-from news.models import MCPAccessKey
+from news.models import Article, EditorialLetter, MCPAccessKey
 
 
 class MCPBootTests(SimpleTestCase):
@@ -30,6 +32,49 @@ class MCPBootTests(SimpleTestCase):
         self.assertIn("create_draft_from_letter", names)
         self.assertNotIn("publish_article", names)
         self.assertFalse(any("publish" in name for name in names))
+
+
+class MCPQueryCountTests(TestCase):
+    def test_list_articles_stays_one_query_with_source_letters(self):
+        first = Article.objects.create(title="Первый слух", body="Текст")
+        first_letter = EditorialLetter.objects.create(body="Источник", converted_article=first)
+
+        with CaptureQueriesContext(connection) as queries:
+            payloads = _list_article_payloads(limit=50)
+
+        self.assertEqual(len(queries), 1)
+        self.assertEqual(payloads[0]["source_letter_id"], first_letter.pk)
+
+        for index in range(20):
+            article = Article.objects.create(title=f"Слух {index}", body="Текст")
+            if index % 2 == 0:
+                EditorialLetter.objects.create(body=f"Источник {index}", converted_article=article)
+
+        with CaptureQueriesContext(connection) as queries:
+            payloads = _list_article_payloads(limit=50)
+
+        self.assertEqual(len(queries), 1)
+        self.assertEqual(len(payloads), 21)
+
+    def test_list_inbox_stays_one_query_with_converted_articles(self):
+        first = Article.objects.create(title="Первый черновик", body="Текст")
+        EditorialLetter.objects.create(body="Первое письмо", converted_article=first)
+
+        with CaptureQueriesContext(connection) as queries:
+            payloads = _list_inbox_payloads(limit=50)
+
+        self.assertEqual(len(queries), 1)
+        self.assertEqual(payloads[0]["converted_article_id"], first.pk)
+
+        for index in range(20):
+            article = Article.objects.create(title=f"Черновик {index}", body="Текст")
+            EditorialLetter.objects.create(body=f"Письмо {index}", converted_article=article)
+
+        with CaptureQueriesContext(connection) as queries:
+            payloads = _list_inbox_payloads(limit=50)
+
+        self.assertEqual(len(queries), 1)
+        self.assertEqual(len(payloads), 21)
 
 
 class MCPAccessKeyTests(TestCase):

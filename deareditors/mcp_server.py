@@ -52,6 +52,26 @@ def _letter_payload(letter: EditorialLetter) -> dict:
     }
 
 
+def _list_article_payloads(status: str = "all", limit: int = 20) -> list[dict]:
+    if status not in {"all", Article.Status.DRAFT, Article.Status.PUBLISHED}:
+        raise ValueError("status должен быть all, draft или published")
+    limit = max(1, min(limit, 50))
+    queryset = Article.objects.select_related("source_letter")
+    if status != "all":
+        queryset = queryset.filter(status=status)
+    return [_article_payload(article) for article in queryset[:limit]]
+
+
+def _list_inbox_payloads(status: str = "all", limit: int = 20) -> list[dict]:
+    if status not in {"all", EditorialLetter.Status.NEW, EditorialLetter.Status.REVIEWED}:
+        raise ValueError("status должен быть all, new или reviewed")
+    limit = max(1, min(limit, 50))
+    queryset = EditorialLetter.objects.select_related("converted_article")
+    if status != "all":
+        queryset = queryset.filter(status=status)
+    return [_letter_payload(letter) for letter in queryset[:limit]]
+
+
 @mcp.resource("editorial-style://guide")
 def editorial_style_resource() -> str:
     """Полный редакционный гайд Dear Editors."""
@@ -67,20 +87,14 @@ def get_editorial_style() -> str:
 @mcp.tool()
 def list_articles(status: str = "all", limit: int = 20) -> list[dict]:
     """Получить последние материалы. status: all, draft или published; limit от 1 до 50."""
-    if status not in {"all", Article.Status.DRAFT, Article.Status.PUBLISHED}:
-        raise ValueError("status должен быть all, draft или published")
-    limit = max(1, min(limit, 50))
-    queryset = Article.objects.all()
-    if status != "all":
-        queryset = queryset.filter(status=status)
-    return [_article_payload(article) for article in queryset[:limit]]
+    return _list_article_payloads(status=status, limit=limit)
 
 
 @mcp.tool()
 def get_article(article_id: int) -> dict:
     """Получить конкретный материал или черновик по ID целиком."""
     try:
-        article = Article.objects.get(pk=article_id)
+        article = Article.objects.select_related("source_letter").get(pk=article_id)
     except Article.DoesNotExist as exc:
         raise ValueError("Материал не найден") from exc
     return _article_payload(article)
@@ -89,13 +103,7 @@ def get_article(article_id: int) -> dict:
 @mcp.tool()
 def list_inbox(status: str = "all", limit: int = 20) -> list[dict]:
     """Получить последние письма в редакцию. status: all, new или reviewed; limit от 1 до 50."""
-    if status not in {"all", EditorialLetter.Status.NEW, EditorialLetter.Status.REVIEWED}:
-        raise ValueError("status должен быть all, new или reviewed")
-    limit = max(1, min(limit, 50))
-    queryset = EditorialLetter.objects.select_related("converted_article")
-    if status != "all":
-        queryset = queryset.filter(status=status)
-    return [_letter_payload(letter) for letter in queryset[:limit]]
+    return _list_inbox_payloads(status=status, limit=limit)
 
 
 @mcp.tool()
