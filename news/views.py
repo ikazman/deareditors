@@ -88,8 +88,12 @@ def reader_card(request):
 def article_image(request, pk):
     image = get_object_or_404(ArticleImage.objects.select_related("article"), pk=pk)
     article = image.article
-    is_published = article.status == Article.Status.PUBLISHED and article.published_at is not None
-    if not is_published and not request.user.is_staff:
+    is_reader_visible = bool(
+        article.status == Article.Status.PUBLISHED
+        and article.published_at is not None
+        and article.published_at <= timezone.now()
+    )
+    if not is_reader_visible and not request.user.is_staff:
         raise Http404
 
     try:
