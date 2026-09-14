@@ -1,9 +1,8 @@
 from django.contrib import messages
-from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
-from django.db import DatabaseError, connection, transaction
+from django.db import DatabaseError, connection
 from django.db.models import Count, Sum
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -16,7 +15,6 @@ from .forms import (
     ArticleForm,
     ArticleImageForm,
     EditorialLetterForm,
-    InvitationAcceptForm,
     InvitationForm,
     MCPKeyForm,
     TarotDeckImportForm,
@@ -125,42 +123,6 @@ def letter_create(request):
 @login_required
 def letter_sent(request):
     return render(request, "news/letter_sent.html")
-
-
-def invite_accept(request, token):
-    if request.user.is_authenticated:
-        messages.info(request, "Вы уже вошли во внутреннее издание.")
-        return redirect("article-list")
-
-    invitation = get_object_or_404(Invitation, token=token)
-    if not invitation.is_active:
-        return render(request, "news/invite_accept.html", {"invitation": invitation, "invite_invalid": True}, status=410)
-
-    if request.method == "POST":
-        form = InvitationAcceptForm(request.POST)
-        if form.is_valid():
-            with transaction.atomic():
-                invitation = Invitation.objects.select_for_update().get(pk=invitation.pk)
-                if not invitation.is_active:
-                    return render(
-                        request,
-                        "news/invite_accept.html",
-                        {"invitation": invitation, "invite_invalid": True},
-                        status=410,
-                    )
-                user = form.save()
-                invitation.accepted_at = timezone.now()
-                invitation.accepted_by = user
-                invitation.save(update_fields=["accepted_at", "accepted_by"])
-                get_or_create_reader_profile(user)
-
-            auth_login(request, user)
-            messages.success(request, "Приглашение принято. Редакционная лента открыта.")
-            return redirect("article-list")
-    else:
-        form = InvitationAcceptForm()
-
-    return render(request, "news/invite_accept.html", {"form": form, "invitation": invitation})
 
 
 @editor_required
