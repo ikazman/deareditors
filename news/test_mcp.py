@@ -33,6 +33,57 @@ class MCPBootTests(SimpleTestCase):
         self.assertNotIn("publish_article", names)
         self.assertFalse(any("publish" in name for name in names))
 
+    def test_read_tools_are_advertised_as_read_only(self):
+        async def tools_by_name():
+            async with Client(mcp) as client:
+                result = await client.list_tools()
+                return {tool.name: tool for tool in result.tools}
+
+        tools = async_to_sync(tools_by_name)()
+        for name in {
+            "get_editorial_style",
+            "list_articles",
+            "get_article",
+            "list_inbox",
+            "get_letter",
+        }:
+            with self.subTest(tool=name):
+                annotations = tools[name].annotations
+                self.assertIsNotNone(annotations)
+                self.assertTrue(annotations.read_only_hint)
+                self.assertFalse(annotations.open_world_hint)
+
+    def test_write_tools_are_advertised_as_mutations(self):
+        async def tools_by_name():
+            async with Client(mcp) as client:
+                result = await client.list_tools()
+                return {tool.name: tool for tool in result.tools}
+
+        tools = async_to_sync(tools_by_name)()
+
+        create_annotations = tools["create_article_draft"].annotations
+        self.assertIsNotNone(create_annotations)
+        self.assertFalse(create_annotations.read_only_hint)
+        self.assertFalse(create_annotations.destructive_hint)
+        self.assertFalse(create_annotations.idempotent_hint)
+        self.assertFalse(create_annotations.open_world_hint)
+
+        for name in {"update_article_draft", "create_draft_from_letter"}:
+            with self.subTest(tool=name):
+                annotations = tools[name].annotations
+                self.assertIsNotNone(annotations)
+                self.assertFalse(annotations.read_only_hint)
+                self.assertTrue(annotations.destructive_hint)
+                self.assertFalse(annotations.idempotent_hint)
+                self.assertFalse(annotations.open_world_hint)
+
+        review_annotations = tools["mark_letter_reviewed"].annotations
+        self.assertIsNotNone(review_annotations)
+        self.assertFalse(review_annotations.read_only_hint)
+        self.assertTrue(review_annotations.destructive_hint)
+        self.assertTrue(review_annotations.idempotent_hint)
+        self.assertFalse(review_annotations.open_world_hint)
+
 
 class MCPQueryCountTests(TestCase):
     def test_list_articles_stays_one_query_with_source_letters(self):
