@@ -3,6 +3,7 @@ import tempfile
 import zipfile
 from datetime import date, datetime
 from io import BytesIO
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -96,14 +97,43 @@ class TarotServiceTests(TarotTestMixin, TestCase):
         self.assertIn(draw.get_position_display(), draw.article.body)
         self.assertIn(draw.meaning, draw.article.body)
 
+    @patch("news.tarot_service._choose_position", return_value=TarotDraw.Position.STRAIGHT)
+    def test_straight_position_uses_straight_meaning(self, choose_position):
+        draw, created = create_card_of_day(date(2026, 9, 13))
+        card = TarotCard.objects.get(name=draw.card_name)
+
+        self.assertTrue(created)
+        choose_position.assert_called_once_with()
+        self.assertEqual(draw.position, TarotDraw.Position.STRAIGHT)
+        self.assertEqual(draw.meaning, card.meaning_straight)
+        self.assertIn("**Прямая.**", draw.article.body)
+        self.assertIn(card.meaning_straight, draw.article.body)
+
+    @patch("news.tarot_service._choose_position", return_value=TarotDraw.Position.REVERSED)
+    def test_reversed_position_uses_reversed_meaning(self, choose_position):
+        draw, created = create_card_of_day(date(2026, 9, 13))
+        card = TarotCard.objects.get(name=draw.card_name)
+
+        self.assertTrue(created)
+        choose_position.assert_called_once_with()
+        self.assertEqual(draw.position, TarotDraw.Position.REVERSED)
+        self.assertEqual(draw.meaning, card.meaning_reversed)
+        self.assertIn("**Перевернутая.**", draw.article.body)
+        self.assertIn(card.meaning_reversed, draw.article.body)
+
     def test_same_date_reuses_the_original_draw(self):
         target_date = date(2026, 9, 13)
-        first, first_created = create_card_of_day(target_date)
-        second, second_created = create_card_of_day(target_date)
+        with patch("news.tarot_service._choose_position", return_value=TarotDraw.Position.STRAIGHT):
+            first, first_created = create_card_of_day(target_date)
+
+        with patch("news.tarot_service._choose_position", return_value=TarotDraw.Position.REVERSED) as reroll:
+            second, second_created = create_card_of_day(target_date)
 
         self.assertTrue(first_created)
         self.assertFalse(second_created)
+        reroll.assert_not_called()
         self.assertEqual(first.pk, second.pk)
+        self.assertEqual(second.position, TarotDraw.Position.STRAIGHT)
         self.assertEqual(TarotDraw.objects.filter(draw_date=target_date).count(), 1)
         self.assertEqual(Article.objects.filter(rubric="Карта дня").count(), 1)
 
