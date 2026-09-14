@@ -1,3 +1,4 @@
+import random
 import shutil
 import tempfile
 import zipfile
@@ -13,7 +14,7 @@ from django.utils import timezone
 from openpyxl import Workbook
 
 from .models import Article, ArticleImage, TarotCard, TarotDraw
-from .tarot_service import create_card_of_day, import_tarot_bundle, question_for_date
+from .tarot_service import _rng_for_question, create_card_of_day, import_tarot_bundle, question_for_date
 
 
 class TarotTestMixin:
@@ -81,6 +82,15 @@ class TarotServiceTests(TarotTestMixin, TestCase):
         self.assertTrue(TarotCard.objects.filter(name="Влюбленные").exists())
         self.assertFalse(TarotCard.objects.filter(name__contains="ё").exists())
 
+    @patch("news.tarot_service.secrets.randbelow", return_value=7)
+    def test_question_and_small_random_shift_form_the_seed(self, randbelow):
+        question = "Как сегодня сложится день?"
+        rng = _rng_for_question(question)
+        expected = random.Random(sum(ord(char) for char in question) + 7)
+
+        randbelow.assert_called_once_with(11)
+        self.assertEqual(rng.getrandbits(128), expected.getrandbits(128))
+
     def test_card_of_day_creates_an_editable_article_with_image(self):
         target_date = date(2026, 9, 13)
         draw, created = create_card_of_day(target_date)
@@ -103,7 +113,7 @@ class TarotServiceTests(TarotTestMixin, TestCase):
         card = TarotCard.objects.get(name=draw.card_name)
 
         self.assertTrue(created)
-        choose_position.assert_called_once_with()
+        choose_position.assert_called_once()
         self.assertEqual(draw.position, TarotDraw.Position.STRAIGHT)
         self.assertEqual(draw.meaning, card.meaning_straight)
         self.assertIn("**Прямая.**", draw.article.body)
@@ -115,7 +125,7 @@ class TarotServiceTests(TarotTestMixin, TestCase):
         card = TarotCard.objects.get(name=draw.card_name)
 
         self.assertTrue(created)
-        choose_position.assert_called_once_with()
+        choose_position.assert_called_once()
         self.assertEqual(draw.position, TarotDraw.Position.REVERSED)
         self.assertEqual(draw.meaning, card.meaning_reversed)
         self.assertIn("**Перевернутая.**", draw.article.body)
