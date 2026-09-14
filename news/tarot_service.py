@@ -198,20 +198,30 @@ def question_for_date(target_date: date) -> str:
 
 
 def _rng_for_question(question: str) -> random.Random:
-    """Give the question its old tarot seed, with a fresh 0..10 random shift."""
+    """Reproduce the old tarot seed without mutating Python's global RNG."""
     seed = sum(ord(char) for char in question) + secrets.randbelow(11)
     return random.Random(seed)
 
 
-def _choose_card(cards: list[TarotCard], previous_name: str | None, rng: random.Random) -> TarotCard:
-    eligible = cards
-    if previous_name and len(cards) > 1:
-        eligible = [card for card in cards if card.name != previous_name]
-    return rng.choice(eligible)
+def _draw_card_and_position(
+    cards: list[TarotCard], previous_name: str | None, rng: random.Random
+) -> tuple[TarotCard, str]:
+    """Mirror the old Deck build: orient every card first, then draw one card."""
+    positioned_cards: list[tuple[TarotCard, str]] = []
+    for card in cards:
+        position = (
+            TarotDraw.Position.REVERSED
+            if rng.randint(0, 1) == 1
+            else TarotDraw.Position.STRAIGHT
+        )
+        positioned_cards.append((card, position))
 
+    eligible = positioned_cards
+    if previous_name and len(positioned_cards) > 1:
+        eligible = [item for item in positioned_cards if item[0].name != previous_name]
 
-def _choose_position(rng: random.Random) -> str:
-    return rng.choice((TarotDraw.Position.STRAIGHT, TarotDraw.Position.REVERSED))
+    # draw_spread(..., "one") in the original project used random.sample(deck, 1).
+    return rng.sample(eligible, 1)[0]
 
 
 def _content_type(filename: str) -> str:
@@ -239,16 +249,16 @@ def create_card_of_day(target_date: date | None = None) -> tuple[TarotDraw, bool
     if existing:
         return existing, False
 
-    cards = list(TarotCard.objects.order_by("name"))
+    # Import order mirrors the source workbook order used by the old Deck builder.
+    cards = list(TarotCard.objects.order_by("pk"))
     if not cards:
         raise ValidationError("Сначала импортируйте колоду из tarot-hb.")
 
     question = question_for_date(target_date)
     rng = _rng_for_question(question)
     previous = TarotDraw.objects.filter(draw_date__lt=target_date).order_by("-draw_date").first()
-    card = _choose_card(cards, previous.card_name if previous else None, rng)
+    card, position = _draw_card_and_position(cards, previous.card_name if previous else None, rng)
 
-    position = _choose_position(rng)
     position_label = TarotDraw.Position(position).label
     meaning = card.meaning_straight if position == TarotDraw.Position.STRAIGHT else card.meaning_reversed
 
