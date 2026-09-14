@@ -46,9 +46,10 @@ WRITE_IDEMPOTENT_MUTATING = ToolAnnotations(
 mcp = MCPServer(
     "Dear Editors",
     instructions=(
-        "Редакционный коннектор Dear Editors. Перед подготовкой текста прочитайте редакционный стиль. "
-        "Коннектор может читать публикации и почту редакции, создавать и исправлять черновики. "
-        "Он не умеет публиковать, снимать с публикации, удалять материалы или управлять доступом."
+        "Dear Editors is a closed editorial publication. Read the editorial guide before preparing "
+        "or revising copy. Read existing articles and inbox letters whenever needed for context. "
+        "You may create and revise drafts, but you must never publish, unpublish or delete articles, "
+        "or manage reader access through this connector."
     ),
 )
 
@@ -113,25 +114,25 @@ def _list_inbox_payloads(status: str = "all", limit: int = 20) -> list[dict]:
 
 @mcp.resource("editorial-style://guide")
 def editorial_style_resource() -> str:
-    """Полный редакционный гайд Dear Editors."""
+    """Full Dear Editors editorial guide."""
     return _style_text()
 
 
 @mcp.tool(title="Read Dear Editors editorial guide", annotations=READ_ONLY)
 async def get_editorial_style() -> str:
-    """Прочитать полный редакционный гайд Dear Editors перед подготовкой или правкой заметки."""
+    """Read the full Dear Editors editorial guide before preparing or revising copy."""
     return await sync_to_async(_style_text, thread_sensitive=False)()
 
 
 @mcp.tool(title="List Dear Editors articles", annotations=READ_ONLY)
 async def list_articles(status: str = "all", limit: int = 20) -> list[dict]:
-    """Получить последние материалы. status: all, draft или published; limit от 1 до 50."""
+    """List recent articles. status is all, draft or published; limit is clamped to 1-50."""
     return await _db(lambda: _list_article_payloads(status=status, limit=limit))()
 
 
 @mcp.tool(title="Get Dear Editors article", annotations=READ_ONLY)
 async def get_article(article_id: int) -> dict:
-    """Получить конкретный материал или черновик по ID целиком."""
+    """Get one article or draft by ID."""
     def load():
         try:
             article = Article.objects.select_related("source_letter").get(pk=article_id)
@@ -144,13 +145,13 @@ async def get_article(article_id: int) -> dict:
 
 @mcp.tool(title="List Dear Editors inbox", annotations=READ_ONLY)
 async def list_inbox(status: str = "all", limit: int = 20) -> list[dict]:
-    """Получить последние письма в редакцию. status: all, new или reviewed; limit от 1 до 50."""
+    """List recent editorial inbox letters. status is all, new or reviewed; limit is clamped to 1-50."""
     return await _db(lambda: _list_inbox_payloads(status=status, limit=limit))()
 
 
 @mcp.tool(title="Get Dear Editors letter", annotations=READ_ONLY)
 async def get_letter(letter_id: int) -> dict:
-    """Получить конкретное письмо в редакцию по ID."""
+    """Get one editorial inbox letter by ID."""
     def load():
         try:
             letter = EditorialLetter.objects.select_related("converted_article").get(pk=letter_id)
@@ -168,7 +169,7 @@ async def create_article_draft(
     lead: str = "",
     author_name: str = "Дорогая редакция",
 ) -> dict:
-    """Создать новый черновик. Никогда не публикует материал."""
+    """Create a new draft article. This tool never publishes the article."""
     def create():
         article = create_draft(title=title, lead=lead, body=body, author_name=author_name)
         return _article_payload(article)
@@ -184,7 +185,7 @@ async def update_article_draft(
     body: str | None = None,
     author_name: str | None = None,
 ) -> dict:
-    """Изменить существующий черновик. Опубликованный материал менять через MCP нельзя."""
+    """Revise an existing draft. Published articles cannot be changed through MCP."""
     def update():
         try:
             article = Article.objects.get(pk=article_id)
@@ -210,7 +211,7 @@ async def create_draft_from_letter(
     body: str | None = None,
     author_name: str = "Дорогая редакция",
 ) -> dict:
-    """Создать или обновить черновик из письма редакции и сохранить связь с источником."""
+    """Create or revise a draft from an inbox letter while preserving the source link."""
     def create_or_update():
         try:
             letter = EditorialLetter.objects.get(pk=letter_id)
@@ -230,7 +231,7 @@ async def create_draft_from_letter(
 
 @mcp.tool(title="Mark Dear Editors letter reviewed", annotations=WRITE_IDEMPOTENT_MUTATING)
 async def mark_letter_reviewed(letter_id: int) -> dict:
-    """Отметить письмо как просмотренное, не создавая материал."""
+    """Mark one inbox letter as reviewed without creating an article."""
     def mark_reviewed():
         try:
             letter = EditorialLetter.objects.get(pk=letter_id)
