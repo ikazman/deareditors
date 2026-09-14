@@ -32,16 +32,24 @@
     </form>
 </section>
 
-{% if words %}
+{% if word_rows %}
 <section class="wordly-editor-history">
     <p class="rubric">Последние слова</p>
     <ol>
-        {% for item in words %}
+        {% for row in word_rows %}
+            {% with item=row.daily_word %}
             <li>
                 <span>{{ item.date|date:"d.m.Y" }}</span>
                 <strong>{{ item.word }}</strong>
-                <span>{{ item.game_count }} партий</span>
+                <span class="wordly-editor-history__meta">
+                    {{ row.game_count }} партий · {{ row.win_count }} угадали{% if row.average_attempts is not None %} · ср. {{ row.average_attempts|floatformat:1 }}{% endif %}
+                </span>
+                <span class="wordly-editor-history__actions">
+                    {% if item.article_id %}<a href="{% url 'editor-article-edit' item.article_id %}">Публикация</a>{% endif %}
+                    <a href="{{ item.get_absolute_url }}">Игра</a>
+                </span>
             </li>
+            {% endwith %}
         {% endfor %}
     </ol>
 </section>
