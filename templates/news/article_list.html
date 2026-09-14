@@ -23,7 +23,7 @@
             </div>
             <h2><a href="{{ article.get_absolute_url }}">{{ article.title }}</a></h2>
             {% if article.lead %}<p>{{ article.lead }}</p>{% endif %}
-            <a class="more more--nav" href="{{ article.get_absolute_url }}">Читать заметку</a>
+            <a class="more more--nav" href="{{ article.get_absolute_url }}">{% if article.wordly_daily_word %}Играть{% else %}Читать заметку{% endif %}</a>
         </article>
     {% empty %}
         <div class="empty">
