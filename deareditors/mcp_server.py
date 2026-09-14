@@ -2,6 +2,7 @@ from pathlib import Path
 
 from django.conf import settings
 from mcp.server import MCPServer
+from mcp.types import ToolAnnotations
 
 from news.editorial_service import (
     create_draft,
@@ -10,6 +11,30 @@ from news.editorial_service import (
     update_draft,
 )
 from news.models import Article, EditorialLetter
+
+
+READ_ONLY_TOOL = ToolAnnotations(
+    read_only_hint=True,
+    open_world_hint=False,
+)
+CREATE_TOOL = ToolAnnotations(
+    read_only_hint=False,
+    destructive_hint=False,
+    idempotent_hint=False,
+    open_world_hint=False,
+)
+MUTATING_TOOL = ToolAnnotations(
+    read_only_hint=False,
+    destructive_hint=True,
+    idempotent_hint=False,
+    open_world_hint=False,
+)
+IDEMPOTENT_MUTATING_TOOL = ToolAnnotations(
+    read_only_hint=False,
+    destructive_hint=True,
+    idempotent_hint=True,
+    open_world_hint=False,
+)
 
 
 mcp = MCPServer(
@@ -82,19 +107,19 @@ def editorial_style_resource() -> str:
     return _style_text()
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY_TOOL)
 def get_editorial_style() -> str:
     """Прочитать полный редакционный гайд Dear Editors перед подготовкой или правкой заметки."""
     return _style_text()
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY_TOOL)
 def list_articles(status: str = "all", limit: int = 20) -> list[dict]:
     """Получить последние материалы. status: all, draft или published; limit от 1 до 50."""
     return _list_article_payloads(status=status, limit=limit)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY_TOOL)
 def get_article(article_id: int) -> dict:
     """Получить конкретный материал или черновик по ID целиком."""
     try:
@@ -104,13 +129,13 @@ def get_article(article_id: int) -> dict:
     return _article_payload(article)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY_TOOL)
 def list_inbox(status: str = "all", limit: int = 20) -> list[dict]:
     """Получить последние письма в редакцию. status: all, new или reviewed; limit от 1 до 50."""
     return _list_inbox_payloads(status=status, limit=limit)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY_TOOL)
 def get_letter(letter_id: int) -> dict:
     """Получить конкретное письмо в редакцию по ID."""
     try:
@@ -120,7 +145,7 @@ def get_letter(letter_id: int) -> dict:
     return _letter_payload(letter)
 
 
-@mcp.tool()
+@mcp.tool(annotations=CREATE_TOOL)
 def create_article_draft(
     title: str,
     body: str,
@@ -132,7 +157,7 @@ def create_article_draft(
     return _article_payload(article)
 
 
-@mcp.tool()
+@mcp.tool(annotations=MUTATING_TOOL)
 def update_article_draft(
     article_id: int,
     title: str | None = None,
@@ -155,7 +180,7 @@ def update_article_draft(
     return _article_payload(article)
 
 
-@mcp.tool()
+@mcp.tool(annotations=MUTATING_TOOL)
 def create_draft_from_letter(
     letter_id: int,
     title: str | None = None,
@@ -178,7 +203,7 @@ def create_draft_from_letter(
     return _article_payload(article)
 
 
-@mcp.tool()
+@mcp.tool(annotations=IDEMPOTENT_MUTATING_TOOL)
 def mark_letter_reviewed(letter_id: int) -> dict:
     """Отметить письмо как просмотренное, не создавая материал."""
     try:
