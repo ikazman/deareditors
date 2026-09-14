@@ -50,6 +50,15 @@ class Article(models.Model):
 
     class Meta:
         ordering = ["-published_at", "-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(status="draft", published_at__isnull=True)
+                    | models.Q(status="published", published_at__isnull=False)
+                ),
+                name="article_status_publication_date_consistent",
+            )
+        ]
         verbose_name = "публикация"
         verbose_name_plural = "публикации"
 
@@ -66,10 +75,16 @@ class Article(models.Model):
                 counter += 1
             self.slug = candidate
 
+        publication_date_changed = False
         if self.status == self.Status.PUBLISHED and self.published_at is None:
             self.published_at = timezone.now()
-        elif self.status == self.Status.DRAFT:
+            publication_date_changed = True
+        elif self.status == self.Status.DRAFT and self.published_at is not None:
             self.published_at = None
+            publication_date_changed = True
+
+        if publication_date_changed and kwargs.get("update_fields") is not None:
+            kwargs["update_fields"] = set(kwargs["update_fields"]) | {"published_at"}
 
         super().save(*args, **kwargs)
 
