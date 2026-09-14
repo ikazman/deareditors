@@ -15,20 +15,20 @@ class ArticleEditorLayoutTests(SimpleTestCase):
         self.assertEqual(form.fields["lead"].widget.attrs["rows"], 2)
         self.assertEqual(form.fields["body"].widget.attrs["rows"], 5)
 
-    def test_mobile_toolbar_becomes_right_side_rail_and_removes_large_min_heights(self):
+    def test_mobile_toolbar_stays_above_text_and_removes_large_min_heights(self):
         css_path = finders.find("news/editor-toolbar.css")
         self.assertIsNotNone(css_path)
         css = Path(css_path).read_text(encoding="utf-8")
 
         self.assertIn("@media (max-width:40rem)", css)
         self.assertIn(".textarea--lead,.textarea--body{min-height:0}", css)
-        self.assertIn(".field--body:focus-within .editor-toolbar", css)
-        self.assertIn("position:fixed", css)
-        self.assertIn("right:max(.45rem, env(safe-area-inset-right))", css)
-        self.assertIn("flex-direction:column", css)
         self.assertIn("background:var(--paper)", css)
+        self.assertIn("min-height:2.4rem", css)
+        self.assertNotIn(".field--body:focus-within .editor-toolbar", css)
+        self.assertNotIn("position:fixed", css)
+        self.assertNotIn("flex-direction:column", css)
 
-    def test_mobile_toolbar_uses_compact_icons_while_desktop_keeps_labels(self):
+    def test_toolbar_keeps_accessible_labels_and_icon_fallbacks(self):
         template = (Path(settings.BASE_DIR) / "templates" / "editor" / "article_form.html").read_text(
             encoding="utf-8"
         )
@@ -48,3 +48,12 @@ class ArticleEditorLayoutTests(SimpleTestCase):
         self.assertIn('textarea.style.height = "auto"', javascript)
         self.assertIn("Math.max(manualFloor, textarea.scrollHeight)", javascript)
         self.assertIn("ResizeObserver", javascript)
+
+    def test_editor_warns_before_leaving_dirty_form(self):
+        js_path = finders.find("news/editor.js")
+        self.assertIsNotNone(js_path)
+        javascript = Path(js_path).read_text(encoding="utf-8")
+
+        self.assertIn('form[data-unsaved-guard]', javascript)
+        self.assertIn('window.addEventListener("beforeunload"', javascript)
+        self.assertIn('event.submitter?.value !== "preview"', javascript)
