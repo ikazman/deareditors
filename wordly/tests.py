@@ -65,6 +65,23 @@ class WordlyServiceTests(TestCase):
         self.assertTrue(changed)
         self.assertEqual(word.word, "СУДЬЯ")
 
+    def test_today_word_is_published_at_the_time_it_is_set(self):
+        before = timezone.now()
+        daily_word, _ = set_daily_word(self.today, "КАССА")
+        after = timezone.now()
+
+        self.assertGreaterEqual(daily_word.article.published_at, before)
+        self.assertLessEqual(daily_word.article.published_at, after)
+
+    def test_resaving_live_word_does_not_bump_it_in_feed(self):
+        daily_word, _ = set_daily_word(self.today, "КАССА")
+        published_at = daily_word.article.published_at
+
+        same_word, changed = set_daily_word(self.today, "КАССА")
+
+        self.assertFalse(changed)
+        self.assertEqual(same_word.article.published_at, published_at)
+
     def test_setting_word_creates_published_feed_entry_without_draft(self):
         target_date = self.today + timedelta(days=1)
         daily_word, changed = set_daily_word(target_date, "СУДЬЯ")
