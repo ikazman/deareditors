@@ -60,12 +60,12 @@ class WordlyServiceTests(TestCase):
         with self.assertRaisesMessage(ValidationError, "не может быть заменено"):
             set_daily_word(self.today, "СУДЬЯ")
 
-    def test_editor_can_replace_word_before_any_attempt(self):
+    def test_editor_can_replace_unopened_word(self):
         word, changed = set_daily_word(self.today, "СУДЬЯ")
         self.assertTrue(changed)
         self.assertEqual(word.word, "СУДЬЯ")
 
-    def test_setting_word_creates_publication_draft(self):
+    def test_setting_word_creates_published_feed_entry_without_draft(self):
         target_date = self.today + timedelta(days=1)
         daily_word, changed = set_daily_word(target_date, "СУДЬЯ")
 
@@ -74,13 +74,23 @@ class WordlyServiceTests(TestCase):
         self.assertEqual(daily_word.article.title, "Редакция загадала слово")
         self.assertEqual(daily_word.article.rubric, "Вордли")
         self.assertEqual(daily_word.article.lead, "Пять букв. Шесть попыток.")
-        self.assertEqual(daily_word.article.status, Article.Status.DRAFT)
+        self.assertEqual(daily_word.article.body, "")
+        self.assertEqual(daily_word.article.status, Article.Status.PUBLISHED)
+        self.assertEqual(timezone.localtime(daily_word.article.published_at).date(), target_date)
 
-    def test_published_word_cannot_be_replaced_even_before_first_guess(self):
-        daily_word, _ = set_daily_word(self.today + timedelta(days=2), "СУДЬЯ")
-        article = daily_word.article
-        article.status = Article.Status.PUBLISHED
-        article.save()
+    def test_future_word_can_be_replaced_before_it_opens(self):
+        target_date = self.today + timedelta(days=2)
+        daily_word, _ = set_daily_word(target_date, "СУДЬЯ")
+
+        updated, changed = set_daily_word(target_date, "КАССА")
+
+        self.assertTrue(changed)
+        self.assertEqual(updated.pk, daily_word.pk)
+        self.assertEqual(updated.word, "КАССА")
+        self.assertEqual(updated.article.status, Article.Status.PUBLISHED)
+
+    def test_live_word_cannot_be_replaced_even_before_first_guess(self):
+        daily_word, _ = set_daily_word(self.today, "СУДЬЯ")
 
         with self.assertRaisesMessage(ValidationError, "не может быть заменено"):
             set_daily_word(daily_word.date, "КАССА")
@@ -94,8 +104,6 @@ class WordlyViewTests(TestCase):
         self.today = timezone.localdate()
         self.daily_word, _ = set_daily_word(self.today, "КАССА")
         self.article = self.daily_word.article
-        self.article.status = Article.Status.PUBLISHED
-        self.article.save()
         self.play_url = self.daily_word.get_absolute_url()
 
     def test_reader_archive_lists_published_word(self):
@@ -117,6 +125,15 @@ class WordlyViewTests(TestCase):
         self.assertNotContains(response, "Словарь редакция не проверяет")
         self.assertNotContains(response, "Слово: КАССА")
 
+    def test_rules_use_the_same_state_highlights_as_the_board(self):
+        self.client.force_login(self.reader)
+        response = self.client.get(self.play_url)
+
+        self.assertContains(response, 'wordly-legend--correct">Буква на месте.</span>')
+        self.assertContains(response, 'wordly-legend--present">Буква есть в слове.</span>')
+        self.assertContains(response, 'wordly-legend--absent">Такой буквы нет.</span>')
+        self.assertNotContains(response, "Зеленый —")
+
     def test_reader_can_submit_nonword_letters(self):
         self.client.force_login(self.reader)
         response = self.client.post(self.play_url, {"guess": "ААААА"})
@@ -134,8 +151,6 @@ class WordlyViewTests(TestCase):
     def test_reader_can_play_published_missed_day_from_archive(self):
         yesterday = self.today - timedelta(days=1)
         missed, _ = set_daily_word(yesterday, "СУДЬЯ")
-        missed.article.status = Article.Status.PUBLISHED
-        missed.article.save()
 
         self.client.force_login(self.reader)
         archive = self.client.get(reverse("wordly"))
@@ -145,7 +160,7 @@ class WordlyViewTests(TestCase):
         self.assertRedirects(response, missed.get_absolute_url())
         self.assertTrue(WordlyGame.objects.get(user=self.reader, daily_word=missed).won)
 
-    def test_unpublished_word_is_hidden_from_reader_but_available_to_editor(self):
+    def test_future_scheduled_word_is_hidden_from_reader_but_available_to_editor(self):
         future_word, _ = set_daily_word(self.today + timedelta(days=1), "СУДЬЯ")
 
         self.client.force_login(self.reader)
@@ -154,10 +169,11 @@ class WordlyViewTests(TestCase):
         self.client.force_login(self.editor)
         self.assertEqual(self.client.get(future_word.get_absolute_url()).status_code, 200)
 
-    def test_published_word_appears_in_feed_as_playable_rubric(self):
+    def test_word_appears_in_feed_as_playable_rubric_without_editorial_draft(self):
         self.client.force_login(self.reader)
         response = self.client.get(reverse("article-list"))
 
+        self.assertEqual(self.article.status, Article.Status.PUBLISHED)
         self.assertContains(response, "Вордли")
         self.assertContains(response, "Редакция загадала слово")
         self.assertContains(response, "Пять букв. Шесть попыток.")
@@ -166,7 +182,7 @@ class WordlyViewTests(TestCase):
         detail = self.client.get(self.article.get_absolute_url())
         self.assertRedirects(detail, self.play_url)
 
-    def test_editor_can_set_future_word_manually_and_get_publication_draft(self):
+    def test_editor_can_set_future_word_without_opening_article_editor(self):
         self.client.force_login(self.editor)
         target_date = self.today + timedelta(days=1)
         response = self.client.post(
@@ -175,12 +191,19 @@ class WordlyViewTests(TestCase):
         )
         daily_word = DailyWord.objects.get(date=target_date)
 
-        self.assertRedirects(
-            response,
-            reverse("editor-article-edit", kwargs={"pk": daily_word.article_id}),
-        )
+        self.assertRedirects(response, reverse("editor-wordly"))
         self.assertEqual(daily_word.word, "СУДЬЯ")
-        self.assertEqual(daily_word.article.status, Article.Status.DRAFT)
+        self.assertEqual(daily_word.article.status, Article.Status.PUBLISHED)
+        self.assertGreater(daily_word.article.published_at, timezone.now())
+
+    def test_future_word_does_not_appear_in_feed_early(self):
+        future_word, _ = set_daily_word(self.today + timedelta(days=1), "СУДЬЯ")
+        self.client.force_login(self.reader)
+
+        response = self.client.get(reverse("article-list"))
+
+        self.assertNotContains(response, future_word.article.slug)
+        self.assertEqual(self.client.get(future_word.article.get_absolute_url()).status_code, 404)
 
     def test_reader_navigation_links_to_wordly_archive(self):
         self.client.force_login(self.reader)
