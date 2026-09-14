@@ -45,7 +45,6 @@
                     {{ row.game_count }} партий · {{ row.win_count }} угадали{% if row.average_attempts is not None %} · ср. {{ row.average_attempts|floatformat:1 }}{% endif %}
                 </span>
                 <span class="wordly-editor-history__actions">
-                    {% if item.article_id %}<a href="{% url 'editor-article-edit' item.article_id %}">Публикация</a>{% endif %}
                     <a href="{{ item.get_absolute_url }}">Игра</a>
                 </span>
             </li>
