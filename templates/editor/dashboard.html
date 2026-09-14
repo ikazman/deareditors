@@ -28,7 +28,13 @@
                     {% if article.rubric %}<span class="desk">{{ article.rubric }}</span>{% endif %}
                     <span class="desk">{{ article.author_name }}</span>
                 </div>
-                <h2 class="desk-row__title"><a href="{% url 'editor-article-edit' article.pk %}">{{ article.title }}</a></h2>
+                <h2 class="desk-row__title">
+                    {% if article.wordly_daily_word %}
+                        <a href="{{ article.wordly_daily_word.get_absolute_url }}">{{ article.title }}</a>
+                    {% else %}
+                        <a href="{% url 'editor-article-edit' article.pk %}">{{ article.title }}</a>
+                    {% endif %}
+                </h2>
                 {% if article.lead %}<p class="desk-row__lead">{{ article.lead }}</p>{% endif %}
             </div>
             <div class="desk-row__actions">
@@ -39,8 +45,12 @@
                         aria-label="{{ article.unique_reader_count }} читателей, {{ article.total_open_count }} открытий"
                     >{{ article.unique_reader_count }} · {{ article.total_open_count }}</span>
                 {% endif %}
-                <a href="{% url 'editor-article-edit' article.pk %}">Править</a>
-                {% if article.status == 'published' %}<a href="{{ article.get_absolute_url }}" target="_blank">Смотреть</a>{% endif %}
+                {% if article.wordly_daily_word %}
+                    <a href="{{ article.wordly_daily_word.get_absolute_url }}" target="_blank">Игра</a>
+                {% else %}
+                    <a href="{% url 'editor-article-edit' article.pk %}">Править</a>
+                    {% if article.status == 'published' %}<a href="{{ article.get_absolute_url }}" target="_blank">Смотреть</a>{% endif %}
+                {% endif %}
             </div>
         </li>
     {% empty %}
