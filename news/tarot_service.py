@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 import secrets
 import zipfile
 from dataclasses import dataclass
@@ -196,15 +197,21 @@ def question_for_date(target_date: date) -> str:
     )
 
 
-def _choose_card(cards: list[TarotCard], previous_name: str | None) -> TarotCard:
+def _rng_for_question(question: str) -> random.Random:
+    """Give the question its old tarot seed, with a fresh 0..10 random shift."""
+    seed = sum(ord(char) for char in question) + secrets.randbelow(11)
+    return random.Random(seed)
+
+
+def _choose_card(cards: list[TarotCard], previous_name: str | None, rng: random.Random) -> TarotCard:
     eligible = cards
     if previous_name and len(cards) > 1:
         eligible = [card for card in cards if card.name != previous_name]
-    return secrets.choice(eligible)
+    return rng.choice(eligible)
 
 
-def _choose_position() -> str:
-    return secrets.choice((TarotDraw.Position.STRAIGHT, TarotDraw.Position.REVERSED))
+def _choose_position(rng: random.Random) -> str:
+    return rng.choice((TarotDraw.Position.STRAIGHT, TarotDraw.Position.REVERSED))
 
 
 def _content_type(filename: str) -> str:
@@ -237,10 +244,11 @@ def create_card_of_day(target_date: date | None = None) -> tuple[TarotDraw, bool
         raise ValidationError("Сначала импортируйте колоду из tarot-hb.")
 
     question = question_for_date(target_date)
+    rng = _rng_for_question(question)
     previous = TarotDraw.objects.filter(draw_date__lt=target_date).order_by("-draw_date").first()
-    card = _choose_card(cards, previous.card_name if previous else None)
+    card = _choose_card(cards, previous.card_name if previous else None, rng)
 
-    position = _choose_position()
+    position = _choose_position(rng)
     position_label = TarotDraw.Position(position).label
     meaning = card.meaning_straight if position == TarotDraw.Position.STRAIGHT else card.meaning_reversed
 
