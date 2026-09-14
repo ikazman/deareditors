@@ -32,9 +32,22 @@ class MobileEditorStabilizationTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'data-unsaved-guard')
-        self.assertContains(response, 'formtarget="_blank"')
-        self.assertContains(response, 'news/editor-preview.css')
-        self.assertContains(response, 'news/editor-preview.js')
+        self.assertNotContains(response, 'formtarget="_blank"')
+        self.assertNotContains(response, 'news/editor-preview.css')
+        self.assertNotContains(response, 'news/editor-preview.js')
+
+    def test_draft_preview_uses_normal_same_context_form_submit(self):
+        draft = Article.objects.create(
+            title="Черновик",
+            body="Редакция смотрит черновик.",
+        )
+        response = self.client.get(reverse("editor-article-edit", args=[draft.pk]))
+        html = response.content.decode()
+
+        self.assertIn('name="action" value="save_preview"', html)
+        self.assertIn("Посмотреть черновик", html)
+        self.assertNotIn('formtarget="_blank"', html)
+        self.assertNotIn('target="_blank"', html)
 
     def test_open_published_article_link_stays_in_same_context(self):
         response = self.client.get(reverse("editor-article-edit", args=[self.article.pk]))
@@ -45,3 +58,4 @@ class MobileEditorStabilizationTests(TestCase):
             html,
         )
         self.assertNotIn('Открыть в издании ↗', html)
+        self.assertNotIn("Посмотреть черновик", html)

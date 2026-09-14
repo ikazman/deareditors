@@ -295,6 +295,23 @@ def editor_article_edit(request, pk):
 
 
 @editor_required
+def editor_article_preview(request, pk):
+    article = get_object_or_404(
+        Article.objects.select_related("wordly_daily_word"),
+        pk=pk,
+        status=Article.Status.DRAFT,
+    )
+    if getattr(article, "wordly_daily_word", None) is not None:
+        messages.info(request, "Публикация Вордли управляется из редакционного экрана игры.")
+        return redirect("editor-wordly")
+
+    # Drafts deliberately keep published_at=NULL. Preview supplies only a
+    # temporary display timestamp; all editorial content comes from the saved row.
+    article.published_at = timezone.now()
+    return render(request, "editor/article_preview.html", {"article": article})
+
+
+@editor_required
 @require_POST
 def editor_article_image_upload(request, pk):
     article = get_object_or_404(Article.objects.select_related("wordly_daily_word"), pk=pk)
@@ -326,28 +343,35 @@ def editor_article_image_upload(request, pk):
 
 def _editor_article_form(request, article):
     if request.method == "POST":
+        was_published = bool(article.pk and article.status == Article.Status.PUBLISHED)
         form = ArticleForm(request.POST, instance=article)
         if form.is_valid():
             article = form.save(commit=False)
             action = request.POST.get("action", "save")
 
-            if action == "preview":
-                if article.published_at is None:
-                    article.published_at = timezone.now()
-                return render(request, "editor/article_preview.html", {"article": article})
-
-            if action == "publish":
-                article.status = Article.Status.PUBLISHED
-            elif action == "draft":
-                article.status = Article.Status.DRAFT
-
-            article.save()
-
-            if article.status == Article.Status.PUBLISHED:
-                messages.success(request, "Материал опубликован.")
+            if action == "save_preview":
+                if was_published:
+                    form.add_error(
+                        None,
+                        "Предпросмотр доступен для черновика. Опубликованный материал уже можно открыть в издании.",
+                    )
+                else:
+                    article.status = Article.Status.DRAFT
+                    article.save()
+                    return redirect("editor-article-preview", pk=article.pk)
             else:
-                messages.success(request, "Черновик сохранен.")
-            return redirect("editor-dashboard")
+                if action == "publish":
+                    article.status = Article.Status.PUBLISHED
+                elif action == "draft":
+                    article.status = Article.Status.DRAFT
+
+                article.save()
+
+                if article.status == Article.Status.PUBLISHED:
+                    messages.success(request, "Материал опубликован.")
+                else:
+                    messages.success(request, "Черновик сохранен.")
+                return redirect("editor-dashboard")
     else:
         form = ArticleForm(instance=article)
 
