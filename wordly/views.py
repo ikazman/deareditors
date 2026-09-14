@@ -46,6 +46,10 @@ def _game_context(request, daily_word: DailyWord, form: GuessForm | None = None)
     guesses = list(game.guesses) if game else []
     finished = bool(game and (game.won or len(guesses) >= MAX_ATTEMPTS))
     article = daily_word.article
+    board = board_rows(daily_word.word, guesses)
+    if finished:
+        board = board[: len(guesses)]
+
     return {
         "daily_word": daily_word,
         "article": article,
@@ -56,8 +60,8 @@ def _game_context(request, daily_word: DailyWord, form: GuessForm | None = None)
         "max_attempts": MAX_ATTEMPTS,
         "finished": finished,
         "answer": daily_word.word if finished else None,
-        "board": board_rows(daily_word.word, guesses),
-        "keyboard_rows": _keyboard(daily_word.word, guesses),
+        "board": board,
+        "keyboard_rows": _keyboard(daily_word.word, guesses) if not finished else [],
         "active_row": len(guesses) if not finished else None,
     }
 
