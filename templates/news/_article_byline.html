@@ -1,0 +1,3 @@
+<span class="stamp">{{ article.published_at|date:"d.m.Y" }}</span>
+<span class="stamp" aria-hidden="true">·</span>
+<span class="desk">{% if article.rubric %}{{ article.rubric }}{% else %}{{ article.author_name }}{% endif %}</span>
