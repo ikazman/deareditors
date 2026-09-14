@@ -37,53 +37,8 @@
     background:var(--paper);
   }
 
-  .field--body:focus-within .editor-toolbar{
-    position:fixed;
-    top:50%;
-    right:max(.45rem, env(safe-area-inset-right));
-    z-index:40;
-    transform:translateY(-50%);
-    flex-direction:column;
-    flex-wrap:nowrap;
-    gap:0;
-    margin:0;
-    padding:.2rem .15rem;
-    border-bottom:0;
-    border-left:1px solid var(--rule);
-  }
-
-  .field--body:focus-within .editor-tool{
-    display:grid;
-    place-items:center;
-    width:2.75rem;
-    height:2.75rem;
-    min-width:2.75rem;
-    padding:0;
-    font-size:1rem;
-  }
-
-  .field--body:focus-within .editor-tool--wide{
-    padding:0;
-  }
-
-  .field--body:focus-within .editor-toolbar__rule{
-    width:1.75rem;
-    height:1px;
-    margin:.1rem 0;
-  }
-
-  .field--body:focus-within .editor-tool__label{
-    display:none;
-  }
-
-  .field--body:focus-within .editor-tool__mobile{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-  }
-
-  .field--body:focus-within .editor-tool__icon{
-    width:1.2rem;
-    height:1.2rem;
+  .editor-tool{
+    min-height:2.4rem;
+    padding:.35rem .45rem;
   }
 }
