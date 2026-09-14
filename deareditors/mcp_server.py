@@ -1,10 +1,14 @@
 from pathlib import Path
 
 from django.conf import settings
-from django.utils import timezone
 from mcp.server import MCPServer
 
-from news.editorial_service import create_draft, create_or_update_draft_from_letter, update_draft
+from news.editorial_service import (
+    create_draft,
+    create_or_update_draft_from_letter,
+    mark_letter_reviewed as review_letter,
+    update_draft,
+)
 from news.models import Article, EditorialLetter
 
 
@@ -181,8 +185,5 @@ def mark_letter_reviewed(letter_id: int) -> dict:
         letter = EditorialLetter.objects.get(pk=letter_id)
     except EditorialLetter.DoesNotExist as exc:
         raise ValueError("Письмо не найдено") from exc
-    if letter.status == EditorialLetter.Status.NEW:
-        letter.status = EditorialLetter.Status.REVIEWED
-        letter.reviewed_at = timezone.now()
-        letter.save(update_fields=["status", "reviewed_at"])
+    review_letter(letter)
     return _letter_payload(letter)
