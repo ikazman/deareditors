@@ -121,14 +121,14 @@ class TarotRerollEditorTests(TarotTestMixin, TestCase):
         )
         self.client.force_login(self.editor)
 
-    def test_editor_page_explains_full_deck_reroll(self):
+    def test_editor_page_offers_reroll_without_explanation_copy(self):
         draw, _ = create_card_of_day()
 
         response = self.client.get(reverse("editor-tarot"))
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Перебросить карту")
-        self.assertContains(response, "Новый цикл: колода собирается заново. Текущий черновик и изображения будут заменены.")
+        self.assertNotContains(response, "Новый цикл: колода собирается заново")
         self.assertNotContains(response, "Может выпасть та же карта")
         self.assertContains(response, reverse("editor-tarot-reroll"))
         self.assertEqual(draw.article.status, Article.Status.DRAFT)
