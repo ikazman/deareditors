@@ -243,10 +243,10 @@ def _content_type(filename: str) -> str:
 
 
 def _body_for_draw(image_marker: str, position_label: str, card: TarotCard, meaning: str) -> str:
-    parts = [image_marker, f"**{position_label}.**"]
+    parts = [image_marker, f"Положение карты: {position_label}"]
     if card.check_words:
-        parts.append(f"*{card.check_words}*")
-    parts.append(meaning)
+        parts.append(f"Ключевые слова: {card.check_words}")
+    parts.append(f"Значение в выпавшем положении: {meaning}")
     return "\n\n".join(parts)
 
 
