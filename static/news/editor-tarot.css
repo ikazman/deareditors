@@ -127,6 +127,17 @@
   line-height:1.45;
 }
 
+.tarot-result__actions{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:.6rem;
+}
+
+.tarot-result__actions form{
+  margin:0;
+}
+
 .tarot-result__image{
   display:block;
   width:100%;

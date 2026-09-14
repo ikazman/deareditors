@@ -126,8 +126,9 @@ class TarotServiceTests(TarotTestMixin, TestCase):
 
         image = ArticleImage.objects.get(article=draw.article)
         self.assertIn(image.marker, draw.article.body)
-        self.assertIn(draw.get_position_display(), draw.article.body)
-        self.assertIn(draw.meaning, draw.article.body)
+        self.assertIn(f"Положение карты: {draw.get_position_display()}", draw.article.body)
+        self.assertIn(f"Ключевые слова: {draw.check_words}", draw.article.body)
+        self.assertIn(f"Значение в выпавшем положении: {draw.meaning}", draw.article.body)
 
     @patch("news.tarot_service._draw_card_and_position")
     def test_straight_position_uses_straight_meaning(self, draw_card):
@@ -142,8 +143,8 @@ class TarotServiceTests(TarotTestMixin, TestCase):
         draw_card.assert_called_once()
         self.assertEqual(draw.position, TarotDraw.Position.STRAIGHT)
         self.assertEqual(draw.meaning, card.meaning_straight)
-        self.assertIn("**Прямая.**", draw.article.body)
-        self.assertIn(card.meaning_straight, draw.article.body)
+        self.assertIn("Положение карты: Прямая", draw.article.body)
+        self.assertIn(f"Значение в выпавшем положении: {card.meaning_straight}", draw.article.body)
 
     @patch("news.tarot_service._draw_card_and_position")
     def test_reversed_position_uses_reversed_meaning(self, draw_card):
@@ -158,8 +159,8 @@ class TarotServiceTests(TarotTestMixin, TestCase):
         draw_card.assert_called_once()
         self.assertEqual(draw.position, TarotDraw.Position.REVERSED)
         self.assertEqual(draw.meaning, card.meaning_reversed)
-        self.assertIn("**Перевернутая.**", draw.article.body)
-        self.assertIn(card.meaning_reversed, draw.article.body)
+        self.assertIn("Положение карты: Перевернутая", draw.article.body)
+        self.assertIn(f"Значение в выпавшем положении: {card.meaning_reversed}", draw.article.body)
 
     def test_same_date_reuses_the_original_draw(self):
         target_date = date(2026, 9, 13)

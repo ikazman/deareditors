@@ -42,9 +42,17 @@
                 <h2>{{ today_draw.card_name }}</h2>
                 <p class="tarot-position">{{ today_draw.get_position_display }}</p>
                 {% if today_draw.check_words %}<p class="tarot-keywords">{{ today_draw.check_words }}</p>{% endif %}
-                {% if today_draw.article_id %}
-                    <a class="btn" href="{% url 'editor-article-edit' today_draw.article_id %}">Открыть черновик</a>
-                {% endif %}
+                <div class="tarot-result__actions">
+                    {% if today_draw.article_id %}
+                        <a class="btn" href="{% url 'editor-article-edit' today_draw.article_id %}">Открыть черновик</a>
+                    {% endif %}
+                    {% if today_draw.article_id and today_draw.article.status == 'draft' %}
+                        <form method="post" action="{% url 'editor-tarot-reroll' %}" onsubmit="return confirm('Собрать всю колоду, перемешать и вытянуть заново? Текущий черновик карты дня будет заменен.');">
+                            {% csrf_token %}
+                            <button class="btn btn--quiet" type="submit">Перебросить карту</button>
+                        </form>
+                    {% endif %}
+                </div>
             </div>
             {% if today_draw.article_id %}
                 {% with tarot_image=today_draw.article.images.first %}
@@ -52,7 +60,9 @@
                 {% endwith %}
             {% endif %}
         </div>
-        <p class="tarot-note">Повторный запуск на эту дату не меняет карту. Редакция придерживается первоначального прогноза.</p>
+        {% if today_draw.article_id and today_draw.article.status != 'draft' %}
+            <p class="tarot-note">Опубликованную карту дня редакция не подменяет.</p>
+        {% endif %}
     {% else %}
         <p class="rubric">Колода готова</p>
         <h2>Можно спрашивать.</h2>
