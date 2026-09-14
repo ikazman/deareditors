@@ -74,6 +74,12 @@
                     {% endfor %}
                 </div>
             {% endfor %}
+            {% if not finished %}
+                <div class="wordly-keyboard__controls">
+                    <button class="wordly-key wordly-key--control" type="button" data-wordly-backspace aria-label="Удалить последнюю букву">←</button>
+                    <button class="wordly-key wordly-key--control" type="button" data-wordly-enter aria-label="Проверить попытку">↵</button>
+                </div>
+            {% endif %}
         </div>
 
         <p class="wordly-note">Зеленый — буква на месте. Желтый — буква есть в слове. Серый — такой буквы больше нет.</p>
