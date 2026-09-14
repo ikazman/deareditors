@@ -46,6 +46,7 @@ def article_list(request):
     articles = Article.objects.select_related("wordly_daily_word").filter(
         status=Article.Status.PUBLISHED,
         published_at__isnull=False,
+        published_at__lte=timezone.now(),
     )
     return render(request, "news/article_list.html", {"articles": articles})
 
@@ -57,6 +58,7 @@ def article_detail(request, slug):
         slug=slug,
         status=Article.Status.PUBLISHED,
         published_at__isnull=False,
+        published_at__lte=timezone.now(),
     )
     record_article_open(request.user, article)
     wordly_daily_word = getattr(article, "wordly_daily_word", None)
