@@ -33,24 +33,28 @@ class MCPBootTests(SimpleTestCase):
         self.assertNotIn("publish_article", names)
         self.assertFalse(any("publish" in name for name in names))
 
-    def test_read_tools_are_advertised_as_read_only(self):
+    def test_read_tools_match_inabd_read_only_contract(self):
         async def tools_by_name():
             async with Client(mcp) as client:
                 result = await client.list_tools()
                 return {tool.name: tool for tool in result.tools}
 
         tools = async_to_sync(tools_by_name)()
-        for name in {
-            "get_editorial_style",
-            "list_articles",
-            "get_article",
-            "list_inbox",
-            "get_letter",
-        }:
+        expected_titles = {
+            "get_editorial_style": "Read Dear Editors editorial guide",
+            "list_articles": "List Dear Editors articles",
+            "get_article": "Get Dear Editors article",
+            "list_inbox": "List Dear Editors inbox",
+            "get_letter": "Get Dear Editors letter",
+        }
+        for name, title in expected_titles.items():
             with self.subTest(tool=name):
-                annotations = tools[name].annotations
+                tool = tools[name]
+                self.assertEqual(tool.title, title)
+                annotations = tool.annotations
                 self.assertIsNotNone(annotations)
                 self.assertTrue(annotations.read_only_hint)
+                self.assertTrue(annotations.idempotent_hint)
                 self.assertFalse(annotations.open_world_hint)
 
     def test_write_tools_are_advertised_as_mutations(self):
@@ -61,23 +65,33 @@ class MCPBootTests(SimpleTestCase):
 
         tools = async_to_sync(tools_by_name)()
 
-        create_annotations = tools["create_article_draft"].annotations
+        create_tool = tools["create_article_draft"]
+        self.assertEqual(create_tool.title, "Create Dear Editors draft")
+        create_annotations = create_tool.annotations
         self.assertIsNotNone(create_annotations)
         self.assertFalse(create_annotations.read_only_hint)
         self.assertFalse(create_annotations.destructive_hint)
         self.assertFalse(create_annotations.idempotent_hint)
         self.assertFalse(create_annotations.open_world_hint)
 
-        for name in {"update_article_draft", "create_draft_from_letter"}:
+        expected_mutating_titles = {
+            "update_article_draft": "Update Dear Editors draft",
+            "create_draft_from_letter": "Create draft from Dear Editors letter",
+        }
+        for name, title in expected_mutating_titles.items():
             with self.subTest(tool=name):
-                annotations = tools[name].annotations
+                tool = tools[name]
+                self.assertEqual(tool.title, title)
+                annotations = tool.annotations
                 self.assertIsNotNone(annotations)
                 self.assertFalse(annotations.read_only_hint)
                 self.assertTrue(annotations.destructive_hint)
                 self.assertFalse(annotations.idempotent_hint)
                 self.assertFalse(annotations.open_world_hint)
 
-        review_annotations = tools["mark_letter_reviewed"].annotations
+        review_tool = tools["mark_letter_reviewed"]
+        self.assertEqual(review_tool.title, "Mark Dear Editors letter reviewed")
+        review_annotations = review_tool.annotations
         self.assertIsNotNone(review_annotations)
         self.assertFalse(review_annotations.read_only_hint)
         self.assertTrue(review_annotations.destructive_hint)
