@@ -43,19 +43,27 @@ def health(request):
 @login_required
 def article_list(request):
     record_daily_visit(request.user)
-    articles = Article.objects.filter(status=Article.Status.PUBLISHED, published_at__isnull=False)
+    articles = Article.objects.select_related("wordly_daily_word").filter(
+        status=Article.Status.PUBLISHED,
+        published_at__isnull=False,
+        published_at__lte=timezone.now(),
+    )
     return render(request, "news/article_list.html", {"articles": articles})
 
 
 @login_required
 def article_detail(request, slug):
     article = get_object_or_404(
-        Article,
+        Article.objects.select_related("wordly_daily_word"),
         slug=slug,
         status=Article.Status.PUBLISHED,
         published_at__isnull=False,
+        published_at__lte=timezone.now(),
     )
     record_article_open(request.user, article)
+    wordly_daily_word = getattr(article, "wordly_daily_word", None)
+    if wordly_daily_word is not None:
+        return redirect(wordly_daily_word.get_absolute_url())
     return render(request, "news/article_detail.html", {"article": article})
 
 
@@ -153,7 +161,7 @@ def invite_accept(request, token):
 
 @editor_required
 def editor_dashboard(request):
-    articles = Article.objects.annotate(
+    articles = Article.objects.select_related("wordly_daily_word").annotate(
         unique_reader_count=Count("reader_views"),
         total_open_count=Sum("reader_views__open_count", default=0),
     )

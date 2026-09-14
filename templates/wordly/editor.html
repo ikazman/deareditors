@@ -1,0 +1,56 @@
+{% extends 'editor/base.html' %}
+{% load static %}
+
+{% block title %}Вордли — Dear Editors{% endblock %}
+{% block content %}
+<a class="backlink" href="{% url 'editor-dashboard' %}">К материалам</a>
+
+<div class="page-head">
+    <div>
+        <p class="rubric">Ежедневная рубрика</p>
+        <h1 class="page-title">Вордли</h1>
+    </div>
+</div>
+
+<section class="wordly-editor-panel">
+    <p>Редакция вручную задает пять букв на нужную дату. Словарной проверки нет: читатель тоже может вводить любые пять русских букв.</p>
+
+    <form method="post" class="form wordly-editor-form">
+        {% csrf_token %}
+        <div class="field">
+            <label class="field__label" for="{{ form.date.id_for_label }}">Дата</label>
+            {{ form.date }}
+            {{ form.date.errors }}
+        </div>
+        <div class="field">
+            <label class="field__label" for="{{ form.word.id_for_label }}">Слово</label>
+            {{ form.word }}
+            <span class="field__hint">Ровно пять русских букв.</span>
+            {{ form.word.errors }}
+        </div>
+        <button class="btn" type="submit">Сохранить слово</button>
+    </form>
+</section>
+
+{% if word_rows %}
+<section class="wordly-editor-history">
+    <p class="rubric">Последние слова</p>
+    <ol>
+        {% for row in word_rows %}
+            {% with item=row.daily_word %}
+            <li>
+                <span>{{ item.date|date:"d.m.Y" }}</span>
+                <strong>{{ item.word }}</strong>
+                <span class="wordly-editor-history__meta">
+                    {{ row.game_count }} партий · {{ row.win_count }} угадали{% if row.average_attempts is not None %} · ср. {{ row.average_attempts|floatformat:1 }}{% endif %}
+                </span>
+                <span class="wordly-editor-history__actions">
+                    <a href="{{ item.get_absolute_url }}">Игра</a>
+                </span>
+            </li>
+            {% endwith %}
+        {% endfor %}
+    </ol>
+</section>
+{% endif %}
+{% endblock %}
