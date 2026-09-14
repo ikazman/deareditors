@@ -78,6 +78,9 @@ def keyboard_states(answer: str, guesses: list[str]) -> dict[str, str]:
 
 
 def _publication_time(target_date):
+    now = timezone.now()
+    if target_date == timezone.localdate(now):
+        return now
     return timezone.make_aware(
         datetime.combine(target_date, time.min),
         timezone.get_current_timezone(),
@@ -85,10 +88,18 @@ def _publication_time(target_date):
 
 
 def _ensure_publication(daily_word: DailyWord) -> Article:
-    published_at = _publication_time(daily_word.date)
+    now = timezone.now()
 
     if daily_word.article_id:
         article = daily_word.article
+        if (
+            article.status == Article.Status.PUBLISHED
+            and article.published_at is not None
+            and article.published_at <= now
+        ):
+            published_at = article.published_at
+        else:
+            published_at = _publication_time(daily_word.date)
         article.title = WORDLY_TITLE
         article.rubric = WORDLY_RUBRIC
         article.lead = WORDLY_LEAD
@@ -118,7 +129,7 @@ def _ensure_publication(daily_word: DailyWord) -> Article:
         body="",
         author_name="Дорогая редакция",
         status=Article.Status.PUBLISHED,
-        published_at=published_at,
+        published_at=_publication_time(daily_word.date),
     )
     daily_word.article = article
     daily_word.save(update_fields=["article", "updated_at"])
