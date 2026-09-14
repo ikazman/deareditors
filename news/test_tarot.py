@@ -82,17 +82,17 @@ class TarotServiceTests(TarotTestMixin, TestCase):
         self.assertTrue(TarotCard.objects.filter(name="Влюбленные").exists())
         self.assertFalse(TarotCard.objects.filter(name__contains="ё").exists())
 
-    @patch("news.tarot_service.secrets.randbelow", return_value=7)
-    def test_question_and_small_random_shift_form_the_seed(self, randbelow):
+    @patch("news.tarot_service.random.randint", return_value=7)
+    def test_question_and_small_random_shift_form_the_seed(self, randint):
         question = "Как сегодня сложится день?"
         rng = _rng_for_question(question)
         expected = random.Random(sum(ord(char) for char in question) + 7)
 
-        randbelow.assert_called_once_with(11)
+        randint.assert_called_once_with(0, 10)
         self.assertEqual(rng.getrandbits(128), expected.getrandbits(128))
 
-    @patch("news.tarot_service.secrets.randbelow", return_value=7)
-    def test_one_card_draw_matches_original_deck_sequence(self, _randbelow):
+    @patch("news.tarot_service.random.randint", return_value=7)
+    def test_one_card_draw_matches_original_deck_sequence(self, _randint):
         target_date = date(2026, 9, 13)
         question = question_for_date(target_date)
         expected_rng = random.Random(sum(ord(char) for char in question) + 7)
