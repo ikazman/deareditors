@@ -1,8 +1,10 @@
+import random
 import shutil
 import tempfile
 import zipfile
 from datetime import date, datetime
 from io import BytesIO
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -12,7 +14,7 @@ from django.utils import timezone
 from openpyxl import Workbook
 
 from .models import Article, ArticleImage, TarotCard, TarotDraw
-from .tarot_service import create_card_of_day, import_tarot_bundle, question_for_date
+from .tarot_service import _rng_for_question, create_card_of_day, import_tarot_bundle, question_for_date
 
 
 class TarotTestMixin:
@@ -80,6 +82,37 @@ class TarotServiceTests(TarotTestMixin, TestCase):
         self.assertTrue(TarotCard.objects.filter(name="Влюбленные").exists())
         self.assertFalse(TarotCard.objects.filter(name__contains="ё").exists())
 
+    @patch("news.tarot_service.random.randint", return_value=7)
+    def test_question_and_small_random_shift_form_the_seed(self, randint):
+        question = "Как сегодня сложится день?"
+        rng = _rng_for_question(question)
+        expected = random.Random(sum(ord(char) for char in question) + 7)
+
+        randint.assert_called_once_with(0, 10)
+        self.assertEqual(rng.getrandbits(128), expected.getrandbits(128))
+
+    @patch("news.tarot_service.random.randint", return_value=7)
+    def test_one_card_draw_matches_original_deck_sequence(self, _randint):
+        target_date = date(2026, 9, 13)
+        question = question_for_date(target_date)
+        expected_rng = random.Random(sum(ord(char) for char in question) + 7)
+        cards = list(TarotCard.objects.order_by("pk"))
+        positioned = []
+        for card in cards:
+            position = (
+                TarotDraw.Position.REVERSED
+                if expected_rng.randint(0, 1) == 1
+                else TarotDraw.Position.STRAIGHT
+            )
+            positioned.append((card, position))
+        expected_card, expected_position = expected_rng.sample(positioned, 1)[0]
+
+        draw, created = create_card_of_day(target_date)
+
+        self.assertTrue(created)
+        self.assertEqual(draw.card_name, expected_card.name)
+        self.assertEqual(draw.position, expected_position)
+
     def test_card_of_day_creates_an_editable_article_with_image(self):
         target_date = date(2026, 9, 13)
         draw, created = create_card_of_day(target_date)
@@ -96,21 +129,74 @@ class TarotServiceTests(TarotTestMixin, TestCase):
         self.assertIn(draw.get_position_display(), draw.article.body)
         self.assertIn(draw.meaning, draw.article.body)
 
+    @patch("news.tarot_service._draw_card_and_position")
+    def test_straight_position_uses_straight_meaning(self, draw_card):
+        draw_card.side_effect = lambda cards, rng: (
+            cards[0],
+            TarotDraw.Position.STRAIGHT,
+        )
+        draw, created = create_card_of_day(date(2026, 9, 13))
+        card = TarotCard.objects.get(name=draw.card_name)
+
+        self.assertTrue(created)
+        draw_card.assert_called_once()
+        self.assertEqual(draw.position, TarotDraw.Position.STRAIGHT)
+        self.assertEqual(draw.meaning, card.meaning_straight)
+        self.assertIn("**Прямая.**", draw.article.body)
+        self.assertIn(card.meaning_straight, draw.article.body)
+
+    @patch("news.tarot_service._draw_card_and_position")
+    def test_reversed_position_uses_reversed_meaning(self, draw_card):
+        draw_card.side_effect = lambda cards, rng: (
+            cards[0],
+            TarotDraw.Position.REVERSED,
+        )
+        draw, created = create_card_of_day(date(2026, 9, 13))
+        card = TarotCard.objects.get(name=draw.card_name)
+
+        self.assertTrue(created)
+        draw_card.assert_called_once()
+        self.assertEqual(draw.position, TarotDraw.Position.REVERSED)
+        self.assertEqual(draw.meaning, card.meaning_reversed)
+        self.assertIn("**Перевернутая.**", draw.article.body)
+        self.assertIn(card.meaning_reversed, draw.article.body)
+
     def test_same_date_reuses_the_original_draw(self):
         target_date = date(2026, 9, 13)
-        first, first_created = create_card_of_day(target_date)
-        second, second_created = create_card_of_day(target_date)
+        with patch("news.tarot_service._draw_card_and_position") as first_draw:
+            first_draw.side_effect = lambda cards, rng: (
+                cards[0],
+                TarotDraw.Position.STRAIGHT,
+            )
+            first, first_created = create_card_of_day(target_date)
+
+        with patch("news.tarot_service._draw_card_and_position") as reroll:
+            reroll.side_effect = lambda cards, rng: (
+                cards[-1],
+                TarotDraw.Position.REVERSED,
+            )
+            second, second_created = create_card_of_day(target_date)
 
         self.assertTrue(first_created)
         self.assertFalse(second_created)
+        reroll.assert_not_called()
         self.assertEqual(first.pk, second.pk)
+        self.assertEqual(second.position, TarotDraw.Position.STRAIGHT)
         self.assertEqual(TarotDraw.objects.filter(draw_date=target_date).count(), 1)
         self.assertEqual(Article.objects.filter(rubric="Карта дня").count(), 1)
 
-    def test_next_day_avoids_immediate_card_repeat(self):
+    @patch("news.tarot_service._draw_card_and_position")
+    def test_consecutive_days_may_draw_the_same_card(self, draw_card):
+        draw_card.side_effect = lambda cards, rng: (
+            cards[0],
+            TarotDraw.Position.STRAIGHT,
+        )
+
         first, _ = create_card_of_day(date(2026, 9, 13))
         second, _ = create_card_of_day(date(2026, 9, 14))
-        self.assertNotEqual(first.card_name, second.card_name)
+
+        self.assertEqual(draw_card.call_count, 2)
+        self.assertEqual(first.card_name, second.card_name)
 
     def test_question_uses_moscow_editorial_date_wording(self):
         self.assertEqual(

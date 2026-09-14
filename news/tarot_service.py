@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import hashlib
-import hmac
 import random
 import zipfile
 from dataclasses import dataclass
@@ -10,7 +8,6 @@ from difflib import get_close_matches
 from io import BytesIO
 from pathlib import PurePosixPath
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.db import transaction
@@ -199,10 +196,28 @@ def question_for_date(target_date: date) -> str:
     )
 
 
-def _rng_for_date(target_date: date, question: str) -> random.Random:
-    payload = f"dear-editors-card-of-day|{target_date.isoformat()}|{question}".encode("utf-8")
-    digest = hmac.new(settings.SECRET_KEY.encode("utf-8"), payload, hashlib.sha256).digest()
-    return random.Random(int.from_bytes(digest, "big"))
+def _rng_for_question(question: str) -> random.Random:
+    """Reproduce the old question + 0..10 noise seed without changing global RNG state."""
+    seed = sum(ord(char) for char in question) + random.randint(0, 10)
+    return random.Random(seed)
+
+
+def _draw_card_and_position(
+    cards: list[TarotCard], rng: random.Random
+) -> tuple[TarotCard, str]:
+    """Mirror the old Deck build: orient every card first, then draw from the full deck."""
+    positioned_cards: list[tuple[TarotCard, str]] = []
+    for card in cards:
+        position = (
+            TarotDraw.Position.REVERSED
+            if rng.randint(0, 1) == 1
+            else TarotDraw.Position.STRAIGHT
+        )
+        positioned_cards.append((card, position))
+
+    # draw_spread(..., "one") in the original project used random.sample(deck, 1).
+    # Every fresh draw uses the whole deck again; yesterday's card is not excluded.
+    return rng.sample(positioned_cards, 1)[0]
 
 
 def _content_type(filename: str) -> str:
@@ -230,21 +245,15 @@ def create_card_of_day(target_date: date | None = None) -> tuple[TarotDraw, bool
     if existing:
         return existing, False
 
-    cards = list(TarotCard.objects.order_by("name"))
+    # Import order mirrors the source workbook order used by the old Deck builder.
+    cards = list(TarotCard.objects.order_by("pk"))
     if not cards:
         raise ValidationError("Сначала импортируйте колоду из tarot-hb.")
 
     question = question_for_date(target_date)
-    rng = _rng_for_date(target_date, question)
-    rng.shuffle(cards)
+    rng = _rng_for_question(question)
+    card, position = _draw_card_and_position(cards, rng)
 
-    previous = TarotDraw.objects.filter(draw_date__lt=target_date).order_by("-draw_date").first()
-    if previous and len(cards) > 1:
-        card = next((candidate for candidate in cards if candidate.name != previous.card_name), cards[0])
-    else:
-        card = cards[0]
-
-    position = rng.choice([TarotDraw.Position.STRAIGHT, TarotDraw.Position.REVERSED])
     position_label = TarotDraw.Position(position).label
     meaning = card.meaning_straight if position == TarotDraw.Position.STRAIGHT else card.meaning_reversed
 
