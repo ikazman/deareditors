@@ -22,7 +22,7 @@
     {% endif %}
 </div>
 
-<form class="form" method="post">
+<form class="form" method="post" data-unsaved-guard>
     {% csrf_token %}
     {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
 
@@ -119,7 +119,7 @@
             <div class="actions__main">
                 <button class="btn" type="submit" name="action" value="save">Сохранить изменения</button>
                 <button class="btn btn--quiet" type="submit" name="action" value="preview" formtarget="_blank">Посмотреть черновик ↗</button>
-                <a class="btn btn--quiet" href="{{ article.get_absolute_url }}" target="_blank">Открыть в издании ↗</a>
+                <a class="btn btn--quiet" href="{{ article.get_absolute_url }}">Открыть в издании</a>
             </div>
             <div class="actions__danger">
                 <button class="btn btn--danger" type="submit" name="action" value="draft">Снять с публикации</button>

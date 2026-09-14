@@ -54,7 +54,8 @@ class ArticleImageEditorUITests(SimpleTestCase):
         css = Path(css_path).read_text(encoding="utf-8")
 
         self.assertIn("Посмотреть черновик ↗", template)
-        self.assertIn("Открыть в издании ↗", template)
+        self.assertIn("Открыть в издании", template)
+        self.assertNotIn("Открыть в издании ↗", template)
         self.assertIn('class="actions__main"', template)
         self.assertIn('class="actions__danger"', template)
         self.assertIn("justify-content:space-between", css)

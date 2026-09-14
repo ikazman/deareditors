@@ -13,7 +13,8 @@ class EditorActionsUITests(SimpleTestCase):
         danger_group = template.index('class="actions__danger"')
         self.assertLess(main_group, danger_group)
         self.assertIn("Посмотреть черновик ↗", template)
-        self.assertIn("Открыть в издании ↗", template)
+        self.assertIn("Открыть в издании", template)
+        self.assertNotIn("Открыть в издании ↗", template)
         self.assertIn("Снять с публикации", template)
 
     def test_desktop_and_mobile_spacing_express_grouping(self):
