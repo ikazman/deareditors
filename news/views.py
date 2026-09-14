@@ -284,14 +284,23 @@ def editor_article_create(request):
 
 @editor_required
 def editor_article_edit(request, pk):
-    article = get_object_or_404(Article, pk=pk)
+    article = get_object_or_404(Article.objects.select_related("wordly_daily_word"), pk=pk)
+    if getattr(article, "wordly_daily_word", None) is not None:
+        messages.info(request, "Публикация Вордли управляется из редакционного экрана игры.")
+        return redirect("editor-wordly")
     return _editor_article_form(request, article)
 
 
 @editor_required
 @require_POST
 def editor_article_image_upload(request, pk):
-    article = get_object_or_404(Article, pk=pk)
+    article = get_object_or_404(Article.objects.select_related("wordly_daily_word"), pk=pk)
+    if getattr(article, "wordly_daily_word", None) is not None:
+        return JsonResponse(
+            {"error": "Публикация Вордли не редактируется через обычный редактор."},
+            status=409,
+        )
+
     form = ArticleImageForm(request.POST, request.FILES)
     if not form.is_valid():
         return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
