@@ -79,6 +79,26 @@ document.addEventListener("DOMContentLoaded", () => {
     textarea.addEventListener("input", fitToContent);
   });
 
+  const guardedForm = document.querySelector("form[data-unsaved-guard]");
+  if (guardedForm) {
+    let dirty = false;
+    let submitting = false;
+    const markDirty = () => {
+      dirty = true;
+    };
+
+    guardedForm.addEventListener("input", markDirty);
+    guardedForm.addEventListener("change", markDirty);
+    guardedForm.addEventListener("submit", (event) => {
+      if (event.submitter?.value !== "preview") submitting = true;
+    });
+    window.addEventListener("beforeunload", (event) => {
+      if (!dirty || submitting) return;
+      event.preventDefault();
+      event.returnValue = "";
+    });
+  }
+
   const body = document.querySelector("textarea.textarea--body");
   const toolbar = document.querySelector(".editor-toolbar");
   if (!body || !toolbar) return;
