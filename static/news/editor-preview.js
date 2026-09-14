@@ -92,7 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
       frame.srcdoc = await response.text();
     } catch (_error) {
       frame.srcdoc = loadingDocument(
-        "Предпросмотр не загрузился. Текст в редакторе сохранен; закройте окно и попробуйте еще раз.",
+        "Предпросмотр не загрузился. Текст остался в редакторе; закройте окно и попробуйте еще раз.",
       );
     }
   });
