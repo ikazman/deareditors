@@ -11,7 +11,7 @@ from django.views.decorators.http import require_POST
 
 from .article_images import save_article_image
 from .auth import editor_required
-from .editorial_service import create_or_update_draft_from_letter
+from .editorial_service import create_or_update_draft_from_letter, mark_letter_reviewed
 from .forms import (
     ArticleForm,
     ArticleImageForm,
@@ -262,10 +262,7 @@ def editor_mcp_key_revoke(request, pk):
 @require_POST
 def editor_letter_review(request, pk):
     letter = get_object_or_404(EditorialLetter, pk=pk)
-    if letter.status == EditorialLetter.Status.NEW:
-        letter.status = EditorialLetter.Status.REVIEWED
-        letter.reviewed_at = timezone.now()
-        letter.save(update_fields=["status", "reviewed_at"])
+    mark_letter_reviewed(letter)
     messages.success(request, "Письмо отмечено как просмотренное.")
     return redirect("editor-inbox")
 
