@@ -116,12 +116,13 @@ class WordlyViewTests(TestCase):
         self.assertContains(response, "Сыграть")
         self.assertContains(response, self.play_url)
 
-    def test_reader_page_shows_game_but_not_answer_before_finish(self):
+    def test_reader_page_uses_game_title_and_hides_answer_before_finish(self):
         self.client.force_login(self.reader)
         response = self.client.get(self.play_url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Пять букв. Шесть попыток")
-        self.assertContains(response, "Редакция загадала слово")
+        self.assertContains(response, '<h1 class="article__title">Вордли</h1>', html=True)
+        self.assertNotContains(response, '<h1 class="article__title">Редакция загадала слово</h1>', html=True)
         self.assertNotContains(response, "Словарь редакция не проверяет")
         self.assertNotContains(response, "Слово: КАССА")
 
@@ -141,12 +142,19 @@ class WordlyViewTests(TestCase):
         game = WordlyGame.objects.get(user=self.reader, daily_word=self.daily_word)
         self.assertEqual(game.guesses, ["ААААА"])
 
-    def test_winning_guess_survives_reload(self):
+    def test_finished_game_collapses_board_and_hides_keyboard(self):
         self.client.force_login(self.reader)
+        self.client.post(self.play_url, {"guess": "ААААА"})
         self.client.post(self.play_url, {"guess": "КАССА"})
+
         response = self.client.get(self.play_url)
+
         self.assertContains(response, "Слово найдено")
-        self.assertContains(response, "Попыток: 1")
+        self.assertContains(response, "Попыток: 2 из 6")
+        self.assertEqual(len(response.context["board"]), 2)
+        self.assertEqual(response.context["keyboard_rows"], [])
+        self.assertNotContains(response, 'aria-label="Клавиатура"')
+        self.assertNotContains(response, "Буква на месте.")
 
     def test_reader_can_play_published_missed_day_from_archive(self):
         yesterday = self.today - timedelta(days=1)
