@@ -203,9 +203,9 @@ def _rng_for_question(question: str) -> random.Random:
 
 
 def _draw_card_and_position(
-    cards: list[TarotCard], previous_name: str | None, rng: random.Random
+    cards: list[TarotCard], rng: random.Random
 ) -> tuple[TarotCard, str]:
-    """Mirror the old Deck build: orient every card first, then draw one card."""
+    """Mirror the old Deck build: orient every card first, then draw from the full deck."""
     positioned_cards: list[tuple[TarotCard, str]] = []
     for card in cards:
         position = (
@@ -215,12 +215,9 @@ def _draw_card_and_position(
         )
         positioned_cards.append((card, position))
 
-    eligible = positioned_cards
-    if previous_name and len(positioned_cards) > 1:
-        eligible = [item for item in positioned_cards if item[0].name != previous_name]
-
     # draw_spread(..., "one") in the original project used random.sample(deck, 1).
-    return rng.sample(eligible, 1)[0]
+    # Every fresh draw uses the whole deck again; yesterday's card is not excluded.
+    return rng.sample(positioned_cards, 1)[0]
 
 
 def _content_type(filename: str) -> str:
@@ -255,8 +252,7 @@ def create_card_of_day(target_date: date | None = None) -> tuple[TarotDraw, bool
 
     question = question_for_date(target_date)
     rng = _rng_for_question(question)
-    previous = TarotDraw.objects.filter(draw_date__lt=target_date).order_by("-draw_date").first()
-    card, position = _draw_card_and_position(cards, previous.card_name if previous else None, rng)
+    card, position = _draw_card_and_position(cards, rng)
 
     position_label = TarotDraw.Position(position).label
     meaning = card.meaning_straight if position == TarotDraw.Position.STRAIGHT else card.meaning_reversed
