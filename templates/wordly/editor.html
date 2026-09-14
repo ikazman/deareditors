@@ -1,0 +1,49 @@
+{% extends 'editor/base.html' %}
+{% load static %}
+
+{% block title %}Вордли — Dear Editors{% endblock %}
+{% block content %}
+<a class="backlink" href="{% url 'editor-dashboard' %}">К материалам</a>
+
+<div class="page-head">
+    <div>
+        <p class="rubric">Ежедневная рубрика</p>
+        <h1 class="page-title">Вордли</h1>
+    </div>
+</div>
+
+<section class="wordly-editor-panel">
+    <p>Редакция вручную задает пять букв на нужную дату. Словарной проверки нет: читатель тоже может вводить любые пять русских букв.</p>
+
+    <form method="post" class="form wordly-editor-form">
+        {% csrf_token %}
+        <div class="field">
+            <label class="field__label" for="{{ form.date.id_for_label }}">Дата</label>
+            {{ form.date }}
+            {{ form.date.errors }}
+        </div>
+        <div class="field">
+            <label class="field__label" for="{{ form.word.id_for_label }}">Слово</label>
+            {{ form.word }}
+            <span class="field__hint">Ровно пять русских букв. «е» и «е» приводятся к одной редакционной форме.</span>
+            {{ form.word.errors }}
+        </div>
+        <button class="btn" type="submit">Сохранить слово</button>
+    </form>
+</section>
+
+{% if words %}
+<section class="wordly-editor-history">
+    <p class="rubric">Последние слова</p>
+    <ol>
+        {% for item in words %}
+            <li>
+                <span>{{ item.date|date:"d.m.Y" }}</span>
+                <strong>{{ item.word }}</strong>
+                <span>{{ item.game_count }} партий</span>
+            </li>
+        {% endfor %}
+    </ol>
+</section>
+{% endif %}
+{% endblock %}
