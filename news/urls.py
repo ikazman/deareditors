@@ -2,7 +2,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import path
 from django.views.generic import RedirectView
 
-from . import invite_views, views
+from . import invite_views, tarot_views, views
 from .forms import ReaderAuthenticationForm
 
 urlpatterns = [
@@ -46,6 +46,11 @@ urlpatterns = [
     ),
     path("editor/", views.editor_dashboard, name="editor-dashboard"),
     path("editor/tarot/", views.editor_tarot, name="editor-tarot"),
+    path(
+        "editor/tarot/reroll/",
+        tarot_views.editor_tarot_reroll,
+        name="editor-tarot-reroll",
+    ),
     path("editor/inbox/", views.editor_inbox, name="editor-inbox"),
     path("editor/invites/", views.editor_invitations, name="editor-invitations"),
     path(
