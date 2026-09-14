@@ -47,13 +47,16 @@ class ArticleImageEditorUITests(SimpleTestCase):
         self.assertIn("insertImageMarker(payload.marker, insertionPoint)", javascript)
         self.assertIn("imageCaption?.addEventListener(\"input\", fitImageCaption)", javascript)
 
-    def test_published_editor_actions_are_named_and_visually_grouped(self):
+    def test_editor_actions_are_named_and_visually_grouped(self):
         template = (Path(settings.BASE_DIR) / "templates" / "editor" / "article_form.html").read_text(encoding="utf-8")
         css_path = finders.find("news/editor-actions.css")
         self.assertIsNotNone(css_path)
         css = Path(css_path).read_text(encoding="utf-8")
 
-        self.assertIn("Посмотреть черновик ↗", template)
+        self.assertIn('value="save_preview"', template)
+        self.assertIn("Посмотреть черновик", template)
+        self.assertNotIn("Посмотреть черновик ↗", template)
+        self.assertNotIn('formtarget="_blank"', template)
         self.assertIn("Открыть в издании", template)
         self.assertNotIn("Открыть в издании ↗", template)
         self.assertIn('class="actions__main"', template)

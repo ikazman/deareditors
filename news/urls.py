@@ -68,6 +68,7 @@ urlpatterns = [
     path("editor/inbox/<int:pk>/convert/", views.editor_letter_convert, name="editor-letter-convert"),
     path("editor/new/", views.editor_article_create, name="editor-article-create"),
     path("editor/<int:pk>/edit/", views.editor_article_edit, name="editor-article-edit"),
+    path("editor/<int:pk>/preview/", views.editor_article_preview, name="editor-article-preview"),
     path(
         "editor/<int:pk>/images/upload/",
         views.editor_article_image_upload,
