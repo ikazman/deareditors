@@ -1,10 +1,19 @@
 from django.conf import settings
 from django.db import models
+from django.urls import reverse
 
 
 class DailyWord(models.Model):
     date = models.DateField("дата", unique=True)
     word = models.CharField("слово", max_length=5)
+    article = models.OneToOneField(
+        "news.Article",
+        verbose_name="публикация",
+        related_name="wordly_daily_word",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
     created_at = models.DateTimeField("создано", auto_now_add=True)
     updated_at = models.DateTimeField("изменено", auto_now=True)
 
@@ -15,6 +24,12 @@ class DailyWord(models.Model):
 
     def __str__(self):
         return f"{self.date:%d.%m.%Y} — {self.word}"
+
+    def get_absolute_url(self):
+        return reverse(
+            "wordly-play",
+            kwargs={"year": self.date.year, "month": self.date.month, "day": self.date.day},
+        )
 
 
 class WordlyGame(models.Model):
