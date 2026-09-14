@@ -1,6 +1,11 @@
 from django.test import TestCase
 
-from .editorial_service import create_draft, create_or_update_draft_from_letter, update_draft
+from .editorial_service import (
+    create_draft,
+    create_or_update_draft_from_letter,
+    mark_letter_reviewed,
+    update_draft,
+)
 from .models import Article, EditorialLetter
 
 
@@ -22,6 +27,18 @@ class EditorialServiceTests(TestCase):
         )
         with self.assertRaisesMessage(ValueError, "только черновики"):
             update_draft(article, title="Попытка переписать")
+
+    def test_mark_letter_reviewed_is_one_way_and_keeps_original_timestamp(self):
+        letter = EditorialLetter.objects.create(body="Редакция уже увидела это письмо.")
+
+        mark_letter_reviewed(letter)
+        first_reviewed_at = letter.reviewed_at
+        self.assertEqual(letter.status, EditorialLetter.Status.REVIEWED)
+        self.assertIsNotNone(first_reviewed_at)
+
+        mark_letter_reviewed(letter)
+        letter.refresh_from_db()
+        self.assertEqual(letter.reviewed_at, first_reviewed_at)
 
     def test_letter_to_draft_keeps_source_link_and_marks_reviewed(self):
         letter = EditorialLetter.objects.create(body="На кухне исчез сахар.")
