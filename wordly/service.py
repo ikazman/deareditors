@@ -1,9 +1,10 @@
 from collections import Counter
 from datetime import datetime, time
 import re
+import time as time_module
 
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import OperationalError, transaction
 from django.utils import timezone
 
 from news.models import Article
@@ -18,6 +19,7 @@ STATE_PRIORITY = {"absent": 0, "present": 1, "correct": 2}
 WORDLY_TITLE = "Редакция загадала слово"
 WORDLY_RUBRIC = "Вордли"
 WORDLY_LEAD = "Пять букв. Шесть попыток."
+GUESS_SAVE_ATTEMPTS = 5
 
 
 def normalize_letters(value: str) -> str:
@@ -166,25 +168,63 @@ def set_daily_word(target_date, raw_word: str) -> tuple[DailyWord, bool]:
     return daily_word, True
 
 
-@transaction.atomic
+def _wordly_game(user, daily_word: DailyWord) -> WordlyGame:
+    for attempt in range(GUESS_SAVE_ATTEMPTS):
+        try:
+            game, _ = WordlyGame.objects.get_or_create(user=user, daily_word=daily_word)
+            return game
+        except OperationalError as exc:
+            if "locked" not in str(exc).casefold() or attempt + 1 >= GUESS_SAVE_ATTEMPTS:
+                raise
+            time_module.sleep(0.05 * (attempt + 1))
+    raise RuntimeError("Не удалось открыть партию Вордли.")
+
+
 def submit_guess(user, daily_word: DailyWord, raw_guess: str) -> WordlyGame:
+    """Append one attempt without losing a simultaneous attempt from the same reader.
+
+    SQLite ignores select_for_update(), so the previous read/modify/write sequence
+    could let two requests read the same guesses list and have the later save
+    overwrite the earlier one. The JSON list itself is used as an optimistic
+    compare-and-swap token: only the request that still sees the same list may
+    update it; a loser reloads the game and appends to the new state.
+    """
     guess = validate_letters(raw_guess)
-    game = (
-        WordlyGame.objects.select_for_update()
-        .filter(user=user, daily_word=daily_word)
-        .first()
-    )
-    if game is None:
-        game = WordlyGame.objects.create(user=user, daily_word=daily_word)
 
-    if game.won or len(game.guesses) >= MAX_ATTEMPTS:
-        raise ValidationError("Эта партия уже завершена.")
+    for attempt in range(GUESS_SAVE_ATTEMPTS):
+        game = _wordly_game(user, daily_word)
+        guesses = list(game.guesses)
+        if game.won or len(guesses) >= MAX_ATTEMPTS:
+            raise ValidationError("Эта партия уже завершена.")
 
-    guesses = list(game.guesses)
-    guesses.append(guess)
-    game.guesses = guesses
-    game.won = guess == daily_word.word
-    if game.won or len(guesses) >= MAX_ATTEMPTS:
-        game.completed_at = timezone.now()
-    game.save(update_fields=["guesses", "won", "completed_at", "updated_at"])
-    return game
+        next_guesses = [*guesses, guess]
+        won = guess == daily_word.word
+        completed_at = timezone.now() if won or len(next_guesses) >= MAX_ATTEMPTS else None
+        updated_at = timezone.now()
+
+        try:
+            updated = WordlyGame.objects.filter(
+                pk=game.pk,
+                guesses=game.guesses,
+                won=False,
+                completed_at__isnull=True,
+            ).update(
+                guesses=next_guesses,
+                won=won,
+                completed_at=completed_at,
+                updated_at=updated_at,
+            )
+        except OperationalError as exc:
+            if "locked" not in str(exc).casefold() or attempt + 1 >= GUESS_SAVE_ATTEMPTS:
+                raise
+            time_module.sleep(0.05 * (attempt + 1))
+            continue
+
+        if updated == 1:
+            game.refresh_from_db(fields=["guesses", "won", "completed_at", "updated_at"])
+            return game
+
+        # Another request changed the same game between our read and write.
+        # Reload and append the attempt to that newer state instead of replacing it.
+
+    raise ValidationError("Не удалось сохранить попытку из-за одновременного запроса. Повторите еще раз.")

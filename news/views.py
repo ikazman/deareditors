@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from .article_images import save_article_image
 from .auth import editor_required
 from .editorial_service import create_or_update_draft_from_letter
 from .forms import (
@@ -214,9 +215,14 @@ def editor_invitations(request):
 @require_POST
 def editor_invitation_revoke(request, pk):
     invitation = get_object_or_404(Invitation, pk=pk)
-    if invitation.is_active:
-        invitation.revoked_at = timezone.now()
-        invitation.save(update_fields=["revoked_at"])
+    revoked_at = timezone.now()
+    revoked = Invitation.objects.filter(
+        pk=invitation.pk,
+        accepted_at__isnull=True,
+        revoked_at__isnull=True,
+        expires_at__gt=revoked_at,
+    ).update(revoked_at=revoked_at)
+    if revoked:
         messages.success(request, "Приглашение отозвано.")
     return redirect("editor-invitations")
 
@@ -307,7 +313,7 @@ def editor_article_image_upload(request, pk):
 
     image = form.save(commit=False)
     image.article = article
-    image.save()
+    save_article_image(image)
     return JsonResponse(
         {
             "id": str(image.pk),
