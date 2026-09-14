@@ -131,7 +131,7 @@ class TarotServiceTests(TarotTestMixin, TestCase):
 
     @patch("news.tarot_service._draw_card_and_position")
     def test_straight_position_uses_straight_meaning(self, draw_card):
-        draw_card.side_effect = lambda cards, previous_name, rng: (
+        draw_card.side_effect = lambda cards, rng: (
             cards[0],
             TarotDraw.Position.STRAIGHT,
         )
@@ -147,7 +147,7 @@ class TarotServiceTests(TarotTestMixin, TestCase):
 
     @patch("news.tarot_service._draw_card_and_position")
     def test_reversed_position_uses_reversed_meaning(self, draw_card):
-        draw_card.side_effect = lambda cards, previous_name, rng: (
+        draw_card.side_effect = lambda cards, rng: (
             cards[0],
             TarotDraw.Position.REVERSED,
         )
@@ -164,14 +164,14 @@ class TarotServiceTests(TarotTestMixin, TestCase):
     def test_same_date_reuses_the_original_draw(self):
         target_date = date(2026, 9, 13)
         with patch("news.tarot_service._draw_card_and_position") as first_draw:
-            first_draw.side_effect = lambda cards, previous_name, rng: (
+            first_draw.side_effect = lambda cards, rng: (
                 cards[0],
                 TarotDraw.Position.STRAIGHT,
             )
             first, first_created = create_card_of_day(target_date)
 
         with patch("news.tarot_service._draw_card_and_position") as reroll:
-            reroll.side_effect = lambda cards, previous_name, rng: (
+            reroll.side_effect = lambda cards, rng: (
                 cards[-1],
                 TarotDraw.Position.REVERSED,
             )
@@ -185,10 +185,18 @@ class TarotServiceTests(TarotTestMixin, TestCase):
         self.assertEqual(TarotDraw.objects.filter(draw_date=target_date).count(), 1)
         self.assertEqual(Article.objects.filter(rubric="Карта дня").count(), 1)
 
-    def test_next_day_avoids_immediate_card_repeat(self):
+    @patch("news.tarot_service._draw_card_and_position")
+    def test_consecutive_days_may_draw_the_same_card(self, draw_card):
+        draw_card.side_effect = lambda cards, rng: (
+            cards[0],
+            TarotDraw.Position.STRAIGHT,
+        )
+
         first, _ = create_card_of_day(date(2026, 9, 13))
         second, _ = create_card_of_day(date(2026, 9, 14))
-        self.assertNotEqual(first.card_name, second.card_name)
+
+        self.assertEqual(draw_card.call_count, 2)
+        self.assertEqual(first.card_name, second.card_name)
 
     def test_question_uses_moscow_editorial_date_wording(self):
         self.assertEqual(
