@@ -1,4 +1,5 @@
 from collections import Counter
+from datetime import datetime, time
 import re
 
 from django.core.exceptions import ValidationError
@@ -76,9 +77,38 @@ def keyboard_states(answer: str, guesses: list[str]) -> dict[str, str]:
     return result
 
 
+def _publication_time(target_date):
+    return timezone.make_aware(
+        datetime.combine(target_date, time.min),
+        timezone.get_current_timezone(),
+    )
+
+
 def _ensure_publication(daily_word: DailyWord) -> Article:
+    published_at = _publication_time(daily_word.date)
+
     if daily_word.article_id:
-        return daily_word.article
+        article = daily_word.article
+        article.title = WORDLY_TITLE
+        article.rubric = WORDLY_RUBRIC
+        article.lead = WORDLY_LEAD
+        article.body = ""
+        article.author_name = "Дорогая редакция"
+        article.status = Article.Status.PUBLISHED
+        article.published_at = published_at
+        article.save(
+            update_fields=[
+                "title",
+                "rubric",
+                "lead",
+                "body",
+                "author_name",
+                "status",
+                "published_at",
+                "updated_at",
+            ]
+        )
+        return article
 
     article = Article.objects.create(
         title=WORDLY_TITLE,
@@ -87,7 +117,8 @@ def _ensure_publication(daily_word: DailyWord) -> Article:
         lead=WORDLY_LEAD,
         body="",
         author_name="Дорогая редакция",
-        status=Article.Status.DRAFT,
+        status=Article.Status.PUBLISHED,
+        published_at=published_at,
     )
     daily_word.article = article
     daily_word.save(update_fields=["article", "updated_at"])
@@ -108,6 +139,7 @@ def set_daily_word(target_date, raw_word: str) -> tuple[DailyWord, bool]:
             existing.article_id
             and existing.article.status == Article.Status.PUBLISHED
             and existing.article.published_at is not None
+            and existing.article.published_at <= timezone.now()
         )
         if existing.word != word and (existing.games.exists() or publication_is_live):
             raise ValidationError("Слово уже открыто читателям и не может быть заменено.")
