@@ -5,6 +5,8 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
+from news.models import Article
+
 from .models import DailyWord, WordlyGame
 
 
@@ -12,6 +14,9 @@ WORD_LENGTH = 5
 MAX_ATTEMPTS = 6
 RUSSIAN_LETTERS = re.compile(r"^[А-ЯЁ]{5}$")
 STATE_PRIORITY = {"absent": 0, "present": 1, "correct": 2}
+WORDLY_TITLE = "Редакция загадала слово"
+WORDLY_RUBRIC = "Вордли"
+WORDLY_LEAD = "Пять букв. Шесть попыток."
 
 
 def normalize_letters(value: str) -> str:
@@ -71,20 +76,51 @@ def keyboard_states(answer: str, guesses: list[str]) -> dict[str, str]:
     return result
 
 
+def _ensure_publication(daily_word: DailyWord) -> Article:
+    if daily_word.article_id:
+        return daily_word.article
+
+    article = Article.objects.create(
+        title=WORDLY_TITLE,
+        slug=f"wordly-{daily_word.date:%Y-%m-%d}",
+        rubric=WORDLY_RUBRIC,
+        lead=WORDLY_LEAD,
+        body="",
+        author_name="Дорогая редакция",
+        status=Article.Status.DRAFT,
+    )
+    daily_word.article = article
+    daily_word.save(update_fields=["article", "updated_at"])
+    return article
+
+
 @transaction.atomic
 def set_daily_word(target_date, raw_word: str) -> tuple[DailyWord, bool]:
     word = validate_letters(raw_word)
-    existing = DailyWord.objects.select_for_update().filter(date=target_date).first()
+    existing = (
+        DailyWord.objects.select_for_update()
+        .select_related("article")
+        .filter(date=target_date)
+        .first()
+    )
     if existing:
-        if existing.word != word and existing.games.exists():
-            raise ValidationError("Слово уже открыто читателям и не может быть заменено после первой попытки.")
+        publication_is_live = bool(
+            existing.article_id
+            and existing.article.status == Article.Status.PUBLISHED
+            and existing.article.published_at is not None
+        )
+        if existing.word != word and (existing.games.exists() or publication_is_live):
+            raise ValidationError("Слово уже открыто читателям и не может быть заменено.")
         changed = existing.word != word
         if changed:
             existing.word = word
             existing.save(update_fields=["word", "updated_at"])
+        _ensure_publication(existing)
         return existing, changed
 
-    return DailyWord.objects.create(date=target_date, word=word), True
+    daily_word = DailyWord.objects.create(date=target_date, word=word)
+    _ensure_publication(daily_word)
+    return daily_word, True
 
 
 @transaction.atomic
@@ -99,7 +135,7 @@ def submit_guess(user, daily_word: DailyWord, raw_guess: str) -> WordlyGame:
         game = WordlyGame.objects.create(user=user, daily_word=daily_word)
 
     if game.won or len(game.guesses) >= MAX_ATTEMPTS:
-        raise ValidationError("Сегодняшняя партия уже завершена.")
+        raise ValidationError("Эта партия уже завершена.")
 
     guesses = list(game.guesses)
     guesses.append(guess)
