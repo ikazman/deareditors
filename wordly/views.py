@@ -36,6 +36,7 @@ def _published_for_readers(daily_word: DailyWord) -> bool:
         article
         and article.status == Article.Status.PUBLISHED
         and article.published_at is not None
+        and article.published_at <= timezone.now()
         and daily_word.date <= timezone.localdate()
     )
 
@@ -69,6 +70,7 @@ def wordly_archive(request):
             date__lte=timezone.localdate(),
             article__status=Article.Status.PUBLISHED,
             article__published_at__isnull=False,
+            article__published_at__lte=timezone.now(),
         )
         .order_by("-date")
     )
@@ -142,14 +144,18 @@ def editor_wordly(request):
                 form.add_error("word", exc.message)
             else:
                 if changed:
-                    messages.success(
-                        request,
-                        f"Слово на {daily_word.date:%d.%m.%Y} установлено. Черновик рубрики подготовлен.",
-                    )
+                    if daily_word.article.published_at <= timezone.now():
+                        messages.success(
+                            request,
+                            f"Слово на {daily_word.date:%d.%m.%Y} установлено и опубликовано в ленте.",
+                        )
+                    else:
+                        messages.success(
+                            request,
+                            f"Слово на {daily_word.date:%d.%m.%Y} установлено. Выпуск появится в ленте в этот день.",
+                        )
                 else:
                     messages.info(request, "Слово уже было установлено. Изменений нет.")
-                if daily_word.article_id:
-                    return redirect("editor-article-edit", pk=daily_word.article_id)
                 return redirect("editor-wordly")
     else:
         form = DailyWordForm(initial=initial)
