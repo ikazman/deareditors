@@ -21,6 +21,25 @@ def record_daily_visit(user, *, at=None):
     return visit
 
 
+def record_article_seen(user, article, *, at=None):
+    """Ensure a reader/article relation exists without inflating repeat-open metrics."""
+    if not should_track_reader(user):
+        return None
+
+    moment = at or timezone.now()
+    record_daily_visit(user, at=moment)
+    view, _ = ReaderArticleView.objects.get_or_create(
+        user=user,
+        article=article,
+        defaults={
+            "first_opened_at": moment,
+            "last_opened_at": moment,
+            "open_count": 1,
+        },
+    )
+    return view
+
+
 def record_article_open(user, article, *, at=None):
     if not should_track_reader(user):
         return None
