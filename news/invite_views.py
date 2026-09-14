@@ -36,6 +36,10 @@ MONTHS_GENITIVE = {
 }
 
 
+class _InvitationClaimLost(Exception):
+    pass
+
+
 def _invite_status_label(invitation) -> str:
     if invitation.accepted_at is not None:
         return "Использовано"
@@ -100,20 +104,35 @@ def invite_accept(request, token):
     if request.method == "POST":
         form = _prepare_invite_form(InvitationAcceptForm(request.POST))
         if form.is_valid():
-            with transaction.atomic():
-                invitation = Invitation.objects.select_for_update().get(pk=invitation.pk)
-                if not invitation.is_active:
-                    return render(
-                        request,
-                        "news/invite_accept.html",
-                        _invite_context(request, invitation, invite_invalid=True),
-                        status=410,
+            try:
+                with transaction.atomic():
+                    # Creating the user is the first write in this transaction.
+                    # On SQLite that acquires the database write lock before we
+                    # claim the invitation, avoiding a stale read -> write
+                    # upgrade. The conditional UPDATE is the actual ownership
+                    # check, so accept and revoke cannot both win.
+                    user = form.save()
+                    accepted_at = timezone.now()
+                    claimed = Invitation.objects.filter(
+                        pk=invitation.pk,
+                        accepted_at__isnull=True,
+                        revoked_at__isnull=True,
+                        expires_at__gt=accepted_at,
+                    ).update(
+                        accepted_at=accepted_at,
+                        accepted_by=user,
                     )
-                user = form.save()
-                invitation.accepted_at = timezone.now()
-                invitation.accepted_by = user
-                invitation.save(update_fields=["accepted_at", "accepted_by"])
-                get_or_create_reader_profile(user)
+                    if claimed != 1:
+                        raise _InvitationClaimLost
+                    get_or_create_reader_profile(user)
+            except _InvitationClaimLost:
+                invitation.refresh_from_db()
+                return render(
+                    request,
+                    "news/invite_accept.html",
+                    _invite_context(request, invitation, invite_invalid=True),
+                    status=410,
+                )
 
             auth_login(request, user)
             messages.success(request, "Приглашение принято. Редакционная лента открыта.")
