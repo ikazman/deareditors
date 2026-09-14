@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{% if article %}{{ article.title }}{% else %}Вордли{% endif %} — Dear Editors{% endblock %}
+{% block title %}Вордли — Dear Editors{% endblock %}
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'wordly/wordly.css' %}">
 <script src="{% static 'wordly/wordly.js' %}" defer></script>
@@ -13,10 +13,10 @@
     <div class="article__byline">
         <span class="stamp">{{ daily_word.date|date:"d.m.Y" }}</span>
         <span class="stamp" aria-hidden="true">·</span>
-        <span class="desk">{% if article and article.rubric %}{{ article.rubric }}{% else %}Вордли{% endif %}</span>
+        <span class="desk">Вордли</span>
     </div>
-    <h1 class="article__title">{% if article %}{{ article.title }}{% else %}Редакция загадала слово{% endif %}</h1>
-    <p class="article__lead">{% if article and article.lead %}{{ article.lead }}{% else %}Пять букв. Шесть попыток.{% endif %}</p>
+    <h1 class="article__title">Вордли</h1>
+    <p class="article__lead">Пять букв. Шесть попыток.</p>
     <hr class="article__rule">
 
     <div class="wordly-board" aria-label="Игровое поле">
@@ -32,7 +32,7 @@
     {% if game and game.won %}
         <div class="wordly-result">
             <strong>Слово найдено.</strong>
-            <span>Попыток: {{ attempts_used }}.</span>
+            <span>Попыток: {{ attempts_used }} из {{ max_attempts }}.</span>
         </div>
     {% elif finished %}
         <div class="wordly-result">
@@ -63,28 +63,26 @@
             </div>
             {% if form.guess.errors %}<div class="wordly-errors">{{ form.guess.errors }}</div>{% endif %}
         </form>
-    {% endif %}
 
-    <div class="wordly-keyboard" aria-label="Клавиатура">
-        {% for row in keyboard_rows %}
-            <div class="wordly-keyboard__row">
-                {% for key in row %}
-                    <button class="wordly-key wordly-key--{{ key.state }}" type="button" data-wordly-key="{{ key.letter }}"{% if finished %} disabled{% endif %}>{{ key.letter }}</button>
-                {% endfor %}
-            </div>
-        {% endfor %}
-        {% if not finished %}
+        <div class="wordly-keyboard" aria-label="Клавиатура">
+            {% for row in keyboard_rows %}
+                <div class="wordly-keyboard__row">
+                    {% for key in row %}
+                        <button class="wordly-key wordly-key--{{ key.state }}" type="button" data-wordly-key="{{ key.letter }}">{{ key.letter }}</button>
+                    {% endfor %}
+                </div>
+            {% endfor %}
             <div class="wordly-keyboard__controls">
                 <button class="wordly-key wordly-key--control" type="button" data-wordly-backspace aria-label="Удалить последнюю букву">←</button>
                 <button class="wordly-key wordly-key--control" type="button" data-wordly-enter aria-label="Проверить попытку">↵</button>
             </div>
-        {% endif %}
-    </div>
+        </div>
 
-    <p class="wordly-note">
-        <span class="wordly-legend wordly-legend--correct">Буква на месте.</span>
-        <span class="wordly-legend wordly-legend--present">Буква есть в слове.</span>
-        <span class="wordly-legend wordly-legend--absent">Такой буквы нет.</span>
-    </p>
+        <p class="wordly-note">
+            <span class="wordly-legend wordly-legend--correct">Буква на месте.</span>
+            <span class="wordly-legend wordly-legend--present">Буква есть в слове.</span>
+            <span class="wordly-legend wordly-legend--absent">Такой буквы нет.</span>
+        </p>
+    {% endif %}
 </section>
 {% endblock %}
