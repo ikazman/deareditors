@@ -90,8 +90,12 @@ class TarotRerollServiceTests(TarotTestMixin, TestCase):
         article.refresh_from_db()
         self.assertEqual(article.title, replacement_card.name)
         self.assertEqual(article.lead, rerolled.question)
-        self.assertIn("**Перевернутая.**", article.body)
-        self.assertIn(replacement_card.meaning_reversed, article.body)
+        self.assertIn("Положение карты: Перевернутая", article.body)
+        self.assertIn(f"Ключевые слова: {replacement_card.check_words}", article.body)
+        self.assertIn(
+            f"Значение в выпавшем положении: {replacement_card.meaning_reversed}",
+            article.body,
+        )
         self.assertNotIn("Другой текст", article.body)
         self.assertEqual(article.images.count(), 1)
 
@@ -124,8 +128,8 @@ class TarotRerollEditorTests(TarotTestMixin, TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Перебросить карту")
-        self.assertContains(response, "новый полный цикл")
-        self.assertContains(response, "Может выпасть та же карта")
+        self.assertContains(response, "Новый цикл: колода собирается заново. Текущий черновик и изображения будут заменены.")
+        self.assertNotContains(response, "Может выпасть та же карта")
         self.assertContains(response, reverse("editor-tarot-reroll"))
         self.assertEqual(draw.article.status, Article.Status.DRAFT)
 
