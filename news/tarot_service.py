@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import random
-import secrets
 import zipfile
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -198,8 +197,8 @@ def question_for_date(target_date: date) -> str:
 
 
 def _rng_for_question(question: str) -> random.Random:
-    """Reproduce the old tarot seed without mutating Python's global RNG."""
-    seed = sum(ord(char) for char in question) + secrets.randbelow(11)
+    """Reproduce the old question + 0..10 noise seed without changing global RNG state."""
+    seed = sum(ord(char) for char in question) + random.randint(0, 10)
     return random.Random(seed)
 
 
