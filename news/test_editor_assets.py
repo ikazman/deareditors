@@ -24,3 +24,14 @@ class EditorAssetRegressionTests(SimpleTestCase):
         self.assertIn("contentOverflows", javascript)
         self.assertIn("else if (valueShrank || deletion)", javascript)
         self.assertIn("shrinkToContent();", javascript)
+
+    def test_draft_preview_is_fetched_without_leaving_editor_page(self):
+        javascript = self._read_static("news/editor-preview.js")
+        stylesheet = self._read_static("news/editor-preview.css")
+
+        self.assertIn('event.submitter?.value !== "preview"', javascript)
+        self.assertIn("event.preventDefault();", javascript)
+        self.assertIn("new FormData(form)", javascript)
+        self.assertIn("await fetch(", javascript)
+        self.assertIn("frame.srcdoc", javascript)
+        self.assertIn("draft-preview-dialog", stylesheet)

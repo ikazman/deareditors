@@ -33,6 +33,8 @@ class MobileEditorStabilizationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'data-unsaved-guard')
         self.assertContains(response, 'formtarget="_blank"')
+        self.assertContains(response, 'news/editor-preview.css')
+        self.assertContains(response, 'news/editor-preview.js')
 
     def test_open_published_article_link_stays_in_same_context(self):
         response = self.client.get(reverse("editor-article-edit", args=[self.article.pk]))
