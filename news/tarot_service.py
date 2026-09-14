@@ -220,6 +220,18 @@ def _draw_card_and_position(
     return rng.sample(positioned_cards, 1)[0]
 
 
+def _draw_once(question: str) -> tuple[TarotCard, str, str]:
+    # Import order mirrors the source workbook order used by the old Deck builder.
+    cards = list(TarotCard.objects.order_by("pk"))
+    if not cards:
+        raise ValidationError("Сначала импортируйте колоду из tarot-hb.")
+
+    rng = _rng_for_question(question)
+    card, position = _draw_card_and_position(cards, rng)
+    meaning = card.meaning_straight if position == TarotDraw.Position.STRAIGHT else card.meaning_reversed
+    return card, position, meaning
+
+
 def _content_type(filename: str) -> str:
     suffix = PurePosixPath(filename).suffix.casefold()
     return {
@@ -238,33 +250,13 @@ def _body_for_draw(image_marker: str, position_label: str, card: TarotCard, mean
     return "\n\n".join(parts)
 
 
-@transaction.atomic
-def create_card_of_day(target_date: date | None = None) -> tuple[TarotDraw, bool]:
-    target_date = target_date or timezone.localdate()
-    existing = TarotDraw.objects.select_related("article").filter(draw_date=target_date).first()
-    if existing:
-        return existing, False
-
-    # Import order mirrors the source workbook order used by the old Deck builder.
-    cards = list(TarotCard.objects.order_by("pk"))
-    if not cards:
-        raise ValidationError("Сначала импортируйте колоду из tarot-hb.")
-
-    question = question_for_date(target_date)
-    rng = _rng_for_question(question)
-    card, position = _draw_card_and_position(cards, rng)
-
-    position_label = TarotDraw.Position(position).label
-    meaning = card.meaning_straight if position == TarotDraw.Position.STRAIGHT else card.meaning_reversed
-
-    article = Article.objects.create(
-        title=card.name,
-        rubric="Карта дня",
-        lead=question,
-        body="Редакция ожидает изображение карты.",
-        author_name="Дорогая редакция",
-        status=Article.Status.DRAFT,
-    )
+def _replace_tarot_article_image_and_body(
+    article: Article,
+    card: TarotCard,
+    position: str,
+    meaning: str,
+) -> None:
+    article.images.all().delete()
 
     card.image.open("rb")
     try:
@@ -282,8 +274,30 @@ def create_card_of_day(target_date: date | None = None) -> tuple[TarotDraw, bool
     image.file.save(PurePosixPath(card.image.name).name, ContentFile(image_bytes), save=False)
     image.save()
 
+    position_label = TarotDraw.Position(position).label
     article.body = _body_for_draw(image.marker, position_label, card, meaning)
     article.save(update_fields=["body", "updated_at"])
+
+
+@transaction.atomic
+def create_card_of_day(target_date: date | None = None) -> tuple[TarotDraw, bool]:
+    target_date = target_date or timezone.localdate()
+    existing = TarotDraw.objects.select_related("article").filter(draw_date=target_date).first()
+    if existing:
+        return existing, False
+
+    question = question_for_date(target_date)
+    card, position, meaning = _draw_once(question)
+
+    article = Article.objects.create(
+        title=card.name,
+        rubric="Карта дня",
+        lead=question,
+        body="Редакция ожидает изображение карты.",
+        author_name="Дорогая редакция",
+        status=Article.Status.DRAFT,
+    )
+    _replace_tarot_article_image_and_body(article, card, position, meaning)
 
     draw = TarotDraw.objects.create(
         draw_date=target_date,
@@ -296,6 +310,49 @@ def create_card_of_day(target_date: date | None = None) -> tuple[TarotDraw, bool
         article=article,
     )
     return draw, True
+
+
+@transaction.atomic
+def reroll_card_of_day(target_date: date | None = None) -> TarotDraw:
+    """Collect the whole deck and run the same question through a fresh draw cycle."""
+    target_date = target_date or timezone.localdate()
+    draw = (
+        TarotDraw.objects.select_for_update()
+        .select_related("article")
+        .filter(draw_date=target_date)
+        .first()
+    )
+    if not draw:
+        raise ValidationError("На эту дату еще нечего перебрасывать: сначала вытяните карту.")
+    if not draw.article_id:
+        raise ValidationError("У этого расклада нет редакционного черновика.")
+    if draw.article.status != Article.Status.DRAFT:
+        raise ValidationError("Опубликованную карту дня редакция не перебрасывает.")
+
+    # A reroll is a new physical-style draw: same question, fresh 0..10 noise,
+    # all cards back in the deck, all orientations assigned again. The result
+    # is allowed to be exactly the same card and position as before.
+    question = draw.question
+    card, position, meaning = _draw_once(question)
+
+    article = draw.article
+    article.title = card.name
+    article.slug = ""
+    article.rubric = "Карта дня"
+    article.lead = question
+    article.body = "Редакция ожидает изображение карты."
+    article.author_name = "Дорогая редакция"
+    article.status = Article.Status.DRAFT
+    article.save()
+    _replace_tarot_article_image_and_body(article, card, position, meaning)
+
+    draw.card_name = card.name
+    draw.position = position
+    draw.check_words = card.check_words
+    draw.prophecy = card.prophecy
+    draw.meaning = meaning
+    draw.save(update_fields=["card_name", "position", "check_words", "prophecy", "meaning"])
+    return draw
 
 
 def recent_draws(limit: int = 7):
