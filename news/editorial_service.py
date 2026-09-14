@@ -66,6 +66,21 @@ def update_draft(
     return article
 
 
+def _apply_review_state(letter: EditorialLetter, *, at=None) -> bool:
+    if letter.status != EditorialLetter.Status.NEW:
+        return False
+    letter.status = EditorialLetter.Status.REVIEWED
+    letter.reviewed_at = at or timezone.now()
+    return True
+
+
+def mark_letter_reviewed(letter: EditorialLetter, *, at=None) -> EditorialLetter:
+    """Apply the one-way NEW -> REVIEWED transition in one shared place."""
+    if _apply_review_state(letter, at=at):
+        letter.save(update_fields=["status", "reviewed_at"])
+    return letter
+
+
 @transaction.atomic
 def create_or_update_draft_from_letter(
     letter: EditorialLetter,
@@ -77,6 +92,7 @@ def create_or_update_draft_from_letter(
 ) -> Article:
     letter = EditorialLetter.objects.select_for_update().select_related("converted_article").get(pk=letter.pk)
 
+    converted_changed = False
     if letter.converted_article_id:
         article = letter.converted_article
         if article.status != Article.Status.DRAFT:
@@ -96,10 +112,14 @@ def create_or_update_draft_from_letter(
             author_name=author_name,
         )
         letter.converted_article = article
+        converted_changed = True
 
-    if letter.status == EditorialLetter.Status.NEW:
-        letter.status = EditorialLetter.Status.REVIEWED
-        letter.reviewed_at = timezone.now()
-
-    letter.save(update_fields=["status", "reviewed_at", "converted_article"])
+    review_changed = _apply_review_state(letter)
+    update_fields = []
+    if converted_changed:
+        update_fields.append("converted_article")
+    if review_changed:
+        update_fields.extend(["status", "reviewed_at"])
+    if update_fields:
+        letter.save(update_fields=update_fields)
     return article

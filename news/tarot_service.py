@@ -14,6 +14,7 @@ from django.db import transaction
 from django.utils import timezone
 from openpyxl import load_workbook
 
+from .article_images import save_article_image
 from .models import Article, ArticleImage, TarotCard, TarotDraw
 
 
@@ -272,7 +273,7 @@ def _replace_tarot_article_image_and_body(
         content_type=_content_type(card.image.name),
     )
     image.file.save(PurePosixPath(card.image.name).name, ContentFile(image_bytes), save=False)
-    image.save()
+    save_article_image(image)
 
     position_label = TarotDraw.Position(position).label
     article.body = _body_for_draw(image.marker, position_label, card, meaning)

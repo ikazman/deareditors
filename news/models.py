@@ -3,7 +3,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 from django.urls import reverse
@@ -30,6 +30,15 @@ def tarot_card_upload_path(instance, filename):
     if extension not in {".jpg", ".jpeg", ".png", ".webp"}:
         extension = ".jpg"
     return f"tarot/cards/{uuid.uuid4().hex}{extension}"
+
+
+def _delete_file_after_commit(field_file):
+    """Keep storage in sync with committed DB state, not rolled-back deletes."""
+    if not field_file or not field_file.name:
+        return
+    storage = field_file.storage
+    name = field_file.name
+    transaction.on_commit(lambda storage=storage, name=name: storage.delete(name))
 
 
 class Article(models.Model):
@@ -147,8 +156,7 @@ class ArticleImage(models.Model):
 
 @receiver(post_delete, sender=ArticleImage)
 def delete_article_image_file(sender, instance, **kwargs):
-    if instance.file:
-        instance.file.storage.delete(instance.file.name)
+    _delete_file_after_commit(instance.file)
 
 
 class TarotCard(models.Model):
@@ -171,8 +179,7 @@ class TarotCard(models.Model):
 
 @receiver(post_delete, sender=TarotCard)
 def delete_tarot_card_file(sender, instance, **kwargs):
-    if instance.image:
-        instance.image.storage.delete(instance.image.name)
+    _delete_file_after_commit(instance.image)
 
 
 class TarotDraw(models.Model):
