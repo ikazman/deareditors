@@ -60,9 +60,7 @@
                 {% endwith %}
             {% endif %}
         </div>
-        {% if today_draw.article_id and today_draw.article.status == 'draft' %}
-            <p class="tarot-note">Новый цикл: колода собирается заново. Текущий черновик и изображения будут заменены.</p>
-        {% else %}
+        {% if today_draw.article_id and today_draw.article.status != 'draft' %}
             <p class="tarot-note">Опубликованную карту дня редакция не подменяет.</p>
         {% endif %}
     {% else %}
