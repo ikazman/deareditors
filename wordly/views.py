@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from news.auth import editor_required
 from news.models import Article
+from news.reader_activity import record_article_seen
 
 from .forms import DailyWordForm, GuessForm
 from .models import DailyWord, WordlyGame
@@ -113,6 +114,9 @@ def wordly_play(request, year: int, month: int, day: int):
     )
     if not request.user.is_staff and not _published_for_readers(daily_word):
         raise Http404
+
+    if daily_word.article_id:
+        record_article_seen(request.user, daily_word.article)
 
     form = GuessForm()
     if request.method == "POST":
