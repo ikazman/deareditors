@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import hashlib
-import hmac
-import random
+import secrets
 import zipfile
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -10,7 +8,6 @@ from difflib import get_close_matches
 from io import BytesIO
 from pathlib import PurePosixPath
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.db import transaction
@@ -199,10 +196,15 @@ def question_for_date(target_date: date) -> str:
     )
 
 
-def _rng_for_date(target_date: date, question: str) -> random.Random:
-    payload = f"dear-editors-card-of-day|{target_date.isoformat()}|{question}".encode("utf-8")
-    digest = hmac.new(settings.SECRET_KEY.encode("utf-8"), payload, hashlib.sha256).digest()
-    return random.Random(int.from_bytes(digest, "big"))
+def _choose_card(cards: list[TarotCard], previous_name: str | None) -> TarotCard:
+    eligible = cards
+    if previous_name and len(cards) > 1:
+        eligible = [card for card in cards if card.name != previous_name]
+    return secrets.choice(eligible)
+
+
+def _choose_position() -> str:
+    return secrets.choice((TarotDraw.Position.STRAIGHT, TarotDraw.Position.REVERSED))
 
 
 def _content_type(filename: str) -> str:
@@ -235,16 +237,10 @@ def create_card_of_day(target_date: date | None = None) -> tuple[TarotDraw, bool
         raise ValidationError("Сначала импортируйте колоду из tarot-hb.")
 
     question = question_for_date(target_date)
-    rng = _rng_for_date(target_date, question)
-    rng.shuffle(cards)
-
     previous = TarotDraw.objects.filter(draw_date__lt=target_date).order_by("-draw_date").first()
-    if previous and len(cards) > 1:
-        card = next((candidate for candidate in cards if candidate.name != previous.card_name), cards[0])
-    else:
-        card = cards[0]
+    card = _choose_card(cards, previous.card_name if previous else None)
 
-    position = rng.choice([TarotDraw.Position.STRAIGHT, TarotDraw.Position.REVERSED])
+    position = _choose_position()
     position_label = TarotDraw.Position(position).label
     meaning = card.meaning_straight if position == TarotDraw.Position.STRAIGHT else card.meaning_reversed
 
