@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static l10n %}
 
 {% block title %}Меню столовой на {{ menu.menu_date|date:"j E" }} — Dear Editors{% endblock %}
 
@@ -36,7 +36,7 @@
                             class="menu-item{% if item.is_selected %} menu-item--selected{% endif %}{% if show_results and item.choice_count %} menu-item--has-result{% endif %}"
                             data-menu-item
                             data-item-id="{{ item.pk }}"
-                            data-price="{{ item.price }}"
+                            data-price="{{ item.price|unlocalize }}"
                             {% if show_results and item.choice_count %}style="--share: {{ item.choice_percent }}%"{% endif %}
                         >
                             <input
