@@ -83,7 +83,7 @@
 
 @media (max-width: 34rem) {
     .menu-item { gap: .45rem; padding-left: .2rem; padding-right: .2rem; }
-    .menu-item__portion { white-space: normal; }
+    .menu-item__portion { display: none; }
     .menu-item__price { min-width: 3rem; }
     .menu-archive__item { grid-template-columns: 5.5rem minmax(0, 1fr); }
     .menu-archive__status { grid-column: 2; text-align: left; }
