@@ -38,7 +38,7 @@ class ParsedMenuItem:
 
 
 def _normalize_yo(text):
-    return text.replace("ё", "е").replace("Ё", "Е")
+    return text.replace("\u0451", "е").replace("\u0401", "Е")
 
 
 def _clean_line(raw_line):
