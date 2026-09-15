@@ -88,7 +88,11 @@ class MenuViewsTests(TestCase):
 
     def test_today_menu_card_appears_in_feed(self):
         from django.utils import timezone
-        DailyMenu.objects.create(menu_date=timezone.localdate(), is_published=True, source_text=SAMPLE_MENU)
+
+        DailyMenu.objects.update_or_create(
+            menu_date=timezone.localdate(),
+            defaults={"is_published": True, "source_text": SAMPLE_MENU},
+        )
         self.client.force_login(self.reader)
         response = self.client.get(reverse("article-list"))
         self.assertContains(response, "Меню столовой на сегодня")
