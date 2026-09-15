@@ -32,13 +32,13 @@
         row.querySelector("input[type='checkbox']").addEventListener("change", () => {
             syncRowState(row);
             syncTotal();
+            submit.textContent = "Сохранить выбор";
         });
     });
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
         submit.disabled = true;
-        const originalLabel = submit.textContent;
         submit.textContent = "Сохраняем…";
 
         try {
@@ -79,12 +79,9 @@
             total.querySelector("strong").textContent = `${formatRubles(payload.selected_total)} ₽`;
             footnote.textContent = `Выбор сохранён. Участников: ${payload.participant_count}. Можно передумать до конца дня.`;
             submit.textContent = "Сохранено";
-            window.setTimeout(() => {
-                submit.textContent = originalLabel;
-            }, 900);
         } catch (error) {
             footnote.textContent = error.message || "Не удалось сохранить выбор.";
-            submit.textContent = originalLabel;
+            submit.textContent = "Сохранить выбор";
         } finally {
             submit.disabled = false;
         }
