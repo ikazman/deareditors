@@ -37,8 +37,12 @@ class ParsedMenuItem:
     sort_order: int
 
 
+def _normalize_yo(text):
+    return text.replace("ё", "е").replace("Ё", "Е")
+
+
 def _clean_line(raw_line):
-    line = raw_line.strip()
+    line = _normalize_yo(raw_line).strip()
     if line.startswith("-"):
         line = line[1:].strip()
     line = line.replace("**", "").strip()
@@ -86,9 +90,10 @@ def parse_menu_text(source_text):
 
 @transaction.atomic
 def save_menu_from_text(menu_date, source_text, *, publish=False):
-    parsed_items = parse_menu_text(source_text)
+    normalized_source = _normalize_yo(source_text).strip()
+    parsed_items = parse_menu_text(normalized_source)
     menu, _ = DailyMenu.objects.select_for_update().get_or_create(menu_date=menu_date)
-    menu.source_text = source_text.strip()
+    menu.source_text = normalized_source
     if publish:
         menu.is_published = True
     menu.save()
