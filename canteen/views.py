@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Count, Exists, OuterRef
+from django.db.models import Count, Exists, OuterRef, Subquery, Sum
 from django.http import Http404, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -64,14 +64,19 @@ def menu_archive(request):
     record_daily_visit(request.user)
     today = timezone.localdate()
     user_selection = MenuSelection.objects.filter(menu_id=OuterRef("pk"), user=request.user)
+    user_total = (
+        MenuSelection.objects.filter(menu_id=OuterRef("pk"), user=request.user)
+        .annotate(total=Sum("selected_items__item__price"))
+        .values("total")[:1]
+    )
     menus = (
         DailyMenu.objects.filter(
             is_published=True,
             menu_date__lte=today,
         )
         .annotate(
-            participant_count=Count("selections", distinct=True),
             user_selected=Exists(user_selection),
+            user_total=Subquery(user_total),
         )
         .order_by("-menu_date")
     )
