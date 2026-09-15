@@ -68,7 +68,7 @@ class WordlyPublicationRecoveryTests(TestCase):
             published_at=timezone.now(),
         )
 
-        with self.assertRaisesMessage(ValidationError, "служебный адрес"):
+        with self.assertRaisesMessage(ValidationError, "Служебный адрес"):
             set_daily_word(self.target_date, "ТОПОТ")
 
         self.assertFalse(DailyWord.objects.filter(date=self.target_date).exists())
