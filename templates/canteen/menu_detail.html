@@ -12,7 +12,7 @@
     <a class="article-back" href="{% url 'article-list' %}">К редакционной ленте</a>
     <p class="rubric">Меню дня · {{ menu.menu_date|date:"j E Y" }}</p>
     <h1 class="menu-title">Что сегодня брать?</h1>
-    <p class="menu-lead">Отметьте всё, что планируете взять. После сохранения редакция покажет агрегированный выбор остальных читателей.</p>
+    <p class="menu-lead">Отметьте все, что планируете взять. После сохранения редакция покажет агрегированный выбор остальных читателей.</p>
 
     <form method="post" class="menu-form">
         {% csrf_token %}
