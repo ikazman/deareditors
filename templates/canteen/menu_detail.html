@@ -1,59 +1,89 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Меню столовой — {{ menu.menu_date|date:"j E" }} — Dear Editors{% endblock %}
+{% block title %}Меню столовой на {{ menu.menu_date|date:"j E" }} — Dear Editors{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'canteen/menu.css' %}">
+<script src="{% static 'canteen/menu.js' %}" defer></script>
 {% endblock %}
 
 {% block content %}
 <section class="menu-page">
-    <a class="article-back" href="{% url 'article-list' %}">К редакционной ленте</a>
+    <a class="article-back" href="{% url 'menu-archive' %}">К архиву меню</a>
     <p class="rubric">Меню дня · {{ menu.menu_date|date:"j E Y" }}</p>
-    <h1 class="menu-title">Что сегодня брать?</h1>
-    <p class="menu-lead">Отметьте все, что планируете взять. После сохранения редакция покажет агрегированный выбор остальных читателей.</p>
+    <h1 class="menu-title">Меню столовой на {{ menu.menu_date|date:"j E" }}</h1>
+    {% if is_editable %}
+        <p class="menu-lead">Что сегодня брать? Отметьте всё, что планируете взять. После сохранения редакция покажет выбор остальных читателей.</p>
+    {% else %}
+        <p class="menu-lead">Архив выпуска. Выбор закрыт; редакция сохраняет собственный выбор читателя и итоговые предпочтения участников.</p>
+    {% endif %}
 
-    <form method="post" class="menu-form">
+    <form
+        method="post"
+        class="menu-form"
+        data-menu-form
+        data-has-selected="{% if has_selected %}1{% else %}0{% endif %}"
+        data-editable="{% if is_editable %}1{% else %}0{% endif %}"
+    >
         {% csrf_token %}
         {% for group in groups %}
             <section class="menu-group">
                 <h2>{{ group.label }}</h2>
                 <div class="menu-items">
                     {% for item in group.items %}
-                        <label class="menu-item{% if item.is_selected %} menu-item--selected{% endif %}">
-                            <span class="menu-item__choice">
-                                <input type="checkbox" name="items" value="{{ item.pk }}" {% if item.is_selected %}checked{% endif %}>
-                                <span>
-                                    <strong>{{ item.name }}</strong>
-                                    {% if item.portion %}<small>{{ item.portion }}</small>{% endif %}
-                                </span>
+                        <label
+                            class="menu-item{% if item.is_selected %} menu-item--selected{% endif %}{% if show_results and item.choice_count %} menu-item--has-result{% endif %}"
+                            data-menu-item
+                            data-item-id="{{ item.pk }}"
+                            data-price="{{ item.price }}"
+                            {% if show_results and item.choice_count %}style="--share: {{ item.choice_percent }}%"{% endif %}
+                        >
+                            <input
+                                class="menu-item__checkbox"
+                                type="checkbox"
+                                name="items"
+                                value="{{ item.pk }}"
+                                {% if item.is_selected %}checked{% endif %}
+                                {% if not is_editable %}disabled{% endif %}
+                            >
+                            <span class="menu-item__mark" aria-hidden="true"></span>
+                            <span class="menu-item__name">
+                                {{ item.name }}{% if item.portion %}<span class="menu-item__portion"> · {{ item.portion }}</span>{% endif %}
                             </span>
+                            <span
+                                class="menu-item__count"
+                                data-menu-count
+                                {% if not show_results or not item.choice_count %}hidden{% endif %}
+                                aria-label="{{ item.choice_count }} человек выбрали эту позицию"
+                            >{% if show_results and item.choice_count %}{{ item.choice_count }}{% endif %}</span>
                             <span class="menu-item__price">{{ item.price|floatformat:"-2" }} ₽</span>
-                            {% if has_selected %}
-                                <span class="menu-result" aria-label="{{ item.choice_count }} человек выбрали эту позицию">
-                                    <span class="menu-result__bar" style="width: {{ item.choice_percent }}%"></span>
-                                    <span class="menu-result__text">{{ item.choice_count }} выбрали · {{ item.choice_percent }}%</span>
-                                </span>
-                            {% endif %}
                         </label>
                     {% endfor %}
                 </div>
             </section>
         {% endfor %}
 
-        <div class="menu-submit">
-            <button class="letter-submit" type="submit">Сохранить выбор</button>
-            {% if has_selected %}
+        {% if is_editable %}
+            <div class="menu-submit">
+                <button class="letter-submit" type="submit" data-menu-submit>Сохранить выбор</button>
+                <span class="menu-total" data-menu-total {% if not has_selected %}hidden{% endif %}>Ваш обед: <strong>{{ selected_total|floatformat:"-2" }} ₽</strong></span>
+            </div>
+        {% elif has_selected %}
+            <div class="menu-submit menu-submit--archive">
                 <span class="menu-total">Ваш обед: <strong>{{ selected_total|floatformat:"-2" }} ₽</strong></span>
-            {% endif %}
-        </div>
+            </div>
+        {% endif %}
     </form>
 
-    {% if has_selected %}
-        <p class="menu-footnote">Участников: {{ participant_count }}. Можно передумать: новый выбор заменит предыдущий.</p>
-    {% else %}
-        <p class="menu-footnote">Результаты появятся после того, как вы сохраните свой выбор.</p>
-    {% endif %}
+    <p class="menu-footnote" data-menu-footnote aria-live="polite">
+        {% if is_editable and has_selected %}
+            Выбор сохранён. Участников: {{ participant_count }}. Можно передумать до конца дня.
+        {% elif is_editable %}
+            Результаты появятся после того, как вы сохраните свой выбор.
+        {% else %}
+            Меню закрыто. Участников: {{ participant_count }}.
+        {% endif %}
+    </p>
 </section>
 {% endblock %}
