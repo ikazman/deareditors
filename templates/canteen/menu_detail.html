@@ -51,7 +51,7 @@
     </form>
 
     {% if has_selected %}
-        <p class="menu-footnote">Выбор сделали {{ participant_count }} читател{{ participant_count|pluralize:"ь,я,ей" }}. Можно передумать: новый выбор заменит предыдущий.</p>
+        <p class="menu-footnote">Участников: {{ participant_count }}. Можно передумать: новый выбор заменит предыдущий.</p>
     {% else %}
         <p class="menu-footnote">Результаты появятся после того, как вы сохраните свой выбор.</p>
     {% endif %}
