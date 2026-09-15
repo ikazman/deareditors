@@ -1,8 +1,7 @@
 {% if menu %}
 <article class="entry entry--menu">
     <div class="byline">
-        <span class="stamp">{{ menu.menu_date|date:"j E Y" }}</span>
-        <span class="desk">Меню дня</span>
+        {% include 'news/_feed_byline.html' with byline_date=menu.menu_date byline_label="Меню дня" only %}
     </div>
     <h2><a href="{{ menu.get_absolute_url }}">{{ menu.display_title }}</a></h2>
     <p>{{ menu.display_lead }}</p>

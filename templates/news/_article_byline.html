@@ -1,3 +1,2 @@
-<span class="stamp">{{ article.published_at|date:"d.m.Y" }}</span>
-<span class="stamp" aria-hidden="true">·</span>
-<span class="desk">{% if article.rubric %}{{ article.rubric }}{% else %}{{ article.author_name }}{% endif %}</span>
+{% firstof article.rubric article.author_name as byline_label %}
+{% include 'news/_feed_byline.html' with byline_date=article.published_at byline_label=byline_label only %}

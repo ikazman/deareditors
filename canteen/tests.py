@@ -249,3 +249,9 @@ class MenuViewsTests(TestCase):
         self.assertContains(response, self.menu.display_title)
         self.assertContains(response, DailyMenu.DEFAULT_LEAD)
         self.assertContains(response, "Выбрать обед")
+        expected_byline = (
+            f'<span class="stamp">{self.today:%d.%m.%Y}</span>\n'
+            '<span class="stamp" aria-hidden="true">·</span>\n'
+            '<span class="desk">Меню дня</span>'
+        )
+        self.assertIn(expected_byline, response.content.decode("utf-8"))
