@@ -1,27 +1,91 @@
-.menu-page { max-width: 46rem; padding: clamp(2.25rem, 5vw, 3.25rem) 0 5rem; }
-.menu-title { max-width: 17ch; margin: 0; font-family: "Playfair Display", serif; font-size: clamp(2.5rem, 7vw, 4.6rem); font-weight: 900; line-height: .95; letter-spacing: -.02em; }
-.menu-lead { max-width: 34rem; margin: 1rem 0 2.2rem; color: var(--ink-soft); }
-.menu-group { margin: 2rem 0 0; }
-.menu-group h2 { margin: 0 0 .65rem; padding-bottom: .35rem; border-bottom: 1px solid var(--ink); font-family: "Playfair Display", serif; font-size: 1.35rem; }
+.menu-page { max-width: 40rem; padding: clamp(2.1rem, 5vw, 3rem) 0 5rem; }
+.menu-title { max-width: 20ch; margin: 0; font-family: "Playfair Display", serif; font-size: clamp(2.2rem, 6vw, 3.9rem); font-weight: 900; line-height: .97; letter-spacing: -.02em; text-wrap: balance; }
+.menu-lead { max-width: 34rem; margin: .8rem 0 0; color: var(--ink-soft); font-size: .98rem; line-height: 1.5; }
+.menu-group { margin: 1.55rem 0 0; }
+.menu-group h2 { margin: 0 0 .22rem; padding-bottom: .28rem; border-bottom: 1px solid var(--ink); font-family: "Playfair Display", serif; font-size: 1.18rem; line-height: 1.2; }
 .menu-items { display: grid; gap: 0; }
-.menu-item { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .25rem 1rem; padding: .8rem 0; border-bottom: 1px solid var(--rule); cursor: pointer; }
-.menu-item__choice { display: flex; gap: .65rem; align-items: flex-start; min-width: 0; }
-.menu-item__choice input { width: 1rem; height: 1rem; margin: .28rem 0 0; accent-color: var(--rubric); }
-.menu-item__choice strong { display: block; font-weight: 700; }
-.menu-item__choice small { display: block; margin-top: .05rem; color: var(--ink-soft); font-size: .76rem; }
-.menu-item__price { font-variant-numeric: tabular-nums; white-space: nowrap; }
-.menu-result { grid-column: 1 / -1; position: relative; display: block; height: 1.25rem; margin: .25rem 0 .05rem 1.65rem; overflow: hidden; background: rgba(20,17,14,.06); }
-.menu-result__bar { position: absolute; inset: 0 auto 0 0; background: rgba(142,53,23,.16); }
-.menu-result__text { position: relative; z-index: 1; display: block; padding: .05rem .35rem; color: var(--ink-soft); font-size: .7rem; line-height: 1.15rem; }
-.menu-submit { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.3rem; margin-top: 2rem; }
+
+.menu-item {
+    --share: 0%;
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    gap: .55rem;
+    min-height: 2.15rem;
+    padding: .38rem .48rem;
+    border-bottom: 1px solid var(--rule);
+    cursor: pointer;
+    background: transparent;
+    transition: background-color .12s ease;
+}
+.menu-item:last-child { border-bottom: 0; }
+.menu-item:hover { background-color: rgba(20, 17, 14, .025); }
+.menu-item--selected:not(.menu-item--has-result) { background-color: rgba(142, 53, 23, .055); }
+.menu-item--has-result { background: linear-gradient(to right, rgba(227, 220, 207, .9) var(--share), transparent var(--share)); }
+.menu-item--has-result:hover { background: linear-gradient(to right, rgba(227, 220, 207, 1) var(--share), rgba(20, 17, 14, .025) var(--share)); }
+
+.menu-item__checkbox {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+.menu-item__mark {
+    flex: 0 0 .55rem;
+    width: .55rem;
+    height: .55rem;
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    background: transparent;
+    transform: translateY(-.04rem);
+}
+.menu-item__checkbox:focus-visible + .menu-item__mark { outline: 2px solid var(--rubric); outline-offset: 3px; }
+.menu-item__checkbox:disabled + .menu-item__mark { opacity: .6; }
+.menu-item--selected .menu-item__mark { border-color: var(--rubric); background: var(--rubric); }
+.menu-item--selected .menu-item__name { font-weight: 700; }
+.menu-item__name { flex: 1 1 auto; min-width: 0; }
+.menu-item__portion { margin-left: .08rem; color: #8a8278; font-size: .8rem; font-weight: 400; white-space: nowrap; }
+.menu-item__count { flex: 0 0 auto; min-width: 1.35rem; color: #8a8278; font-size: .8rem; text-align: right; font-variant-numeric: tabular-nums; }
+.menu-item__price { flex: 0 0 auto; min-width: 3.5rem; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.menu-submit { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.25rem; margin-top: 1.45rem; }
+.menu-submit--archive { margin-top: 1.2rem; }
 .menu-total { color: var(--ink-soft); }
 .menu-total strong { color: var(--ink); }
-.menu-footnote { max-width: 34rem; margin: 1.1rem 0 0; color: #7a7269; font-size: .82rem; }
+.menu-total[hidden] { display: none; }
+.menu-footnote { max-width: 34rem; margin: .65rem 0 0; color: #8a8278; font-size: .8rem; line-height: 1.45; }
+.menu-submit .letter-submit:disabled { opacity: .62; cursor: default; }
+
+.menu-archive__list { margin-top: 2rem; border-top: 1px solid var(--ink); }
+.menu-archive__item {
+    display: grid;
+    grid-template-columns: 6.5rem minmax(0, 1fr) auto;
+    gap: .75rem 1rem;
+    align-items: baseline;
+    padding: .75rem 0;
+    border-bottom: 1px solid var(--rule);
+    color: inherit;
+    text-decoration: none;
+}
+.menu-archive__item:hover .menu-archive__title { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .16em; }
+.menu-archive__date, .menu-archive__status { color: var(--ink-soft); font-size: .75rem; }
+.menu-archive__date { font-variant-numeric: tabular-nums; }
+.menu-archive__title { font-family: "Playfair Display", serif; font-size: 1.05rem; font-weight: 700; }
+.menu-archive__status { text-align: right; white-space: nowrap; }
+
 .entry--menu { position: relative; }
 .entry--menu::before { content: ""; position: absolute; left: calc(-1 * var(--gutter)); top: 0; bottom: 0; width: 2px; background: var(--rubric); }
 
 @media (max-width: 34rem) {
-    .menu-item { grid-template-columns: minmax(0, 1fr) auto; }
-    .menu-result { margin-left: 0; }
+    .menu-item { gap: .45rem; padding-left: .2rem; padding-right: .2rem; }
+    .menu-item__portion { display: none; }
+    .menu-item__price { min-width: 3rem; }
+    .menu-archive__item { grid-template-columns: 5.5rem minmax(0, 1fr); }
+    .menu-archive__status { grid-column: 2; text-align: left; }
     .entry--menu::before { display: none; }
 }

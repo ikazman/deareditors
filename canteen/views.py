@@ -1,10 +1,12 @@
+from datetime import date
 from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Exists, OuterRef, Subquery, Sum
+from django.http import Http404, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
@@ -28,48 +30,12 @@ def _menu_groups(items):
     ]
 
 
-@login_required
-def menu_today(request):
-    menu = DailyMenu.objects.filter(
-        menu_date=timezone.localdate(),
-        is_published=True,
-    ).first()
-    if menu is None:
-        record_daily_visit(request.user)
-        return render(request, "canteen/menu_missing.html")
-    return redirect(menu.get_absolute_url())
-
-
-@login_required
-@require_http_methods(["GET", "POST"])
-def menu_detail(request, menu_date):
-    menu = get_object_or_404(DailyMenu, menu_date=menu_date, is_published=True)
-    record_daily_visit(request.user)
-
-    if request.method == "POST":
-        requested_ids = request.POST.getlist("items")
-        valid_ids = set(
-            menu.items.filter(pk__in=requested_ids).values_list("pk", flat=True)
-        )
-        with transaction.atomic():
-            selection, _ = MenuSelection.objects.select_for_update().get_or_create(
-                menu=menu,
-                user=request.user,
-            )
-            selection.selected_items.all().delete()
-            MenuSelectionItem.objects.bulk_create(
-                [MenuSelectionItem(selection=selection, item_id=item_id) for item_id in valid_ids]
-            )
-            selection.save(update_fields=["updated_at"])
-        return redirect(menu.get_absolute_url())
-
+def _menu_state(menu, user):
     items = list(menu.items.annotate(choice_count=Count("selection_items")))
-    selection = MenuSelection.objects.filter(menu=menu, user=request.user).first()
+    selection = MenuSelection.objects.filter(menu=menu, user=user).first()
     selected_ids = set()
     if selection is not None:
-        selected_ids = set(
-            selection.selected_items.values_list("item_id", flat=True)
-        )
+        selected_ids = set(selection.selected_items.values_list("item_id", flat=True))
 
     participant_count = menu.selections.count()
     selected_total = Decimal("0")
@@ -83,15 +49,101 @@ def menu_detail(request, menu_date):
         if item.is_selected:
             selected_total += item.price
 
+    return {
+        "groups": _menu_groups(items),
+        "items": items,
+        "has_selected": selection is not None,
+        "participant_count": participant_count,
+        "selected_total": selected_total,
+        "selected_ids": selected_ids,
+    }
+
+
+@login_required
+def menu_archive(request):
+    record_daily_visit(request.user)
+    today = timezone.localdate()
+    user_selection = MenuSelection.objects.filter(menu_id=OuterRef("pk"), user=request.user)
+    user_total = (
+        MenuSelection.objects.filter(menu_id=OuterRef("pk"), user=request.user)
+        .annotate(total=Sum("selected_items__item__price"))
+        .values("total")[:1]
+    )
+    menus = (
+        DailyMenu.objects.filter(
+            is_published=True,
+            menu_date__lte=today,
+        )
+        .annotate(
+            user_selected=Exists(user_selection),
+            user_total=Subquery(user_total),
+        )
+        .order_by("-menu_date")
+    )
+    return render(request, "canteen/menu_archive.html", {"menus": menus, "today": today})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def menu_detail(request, menu_date):
+    try:
+        parsed_date = date.fromisoformat(menu_date)
+    except ValueError:
+        raise Http404 from None
+
+    menu = get_object_or_404(DailyMenu, menu_date=parsed_date, is_published=True)
+    record_daily_visit(request.user)
+    today = timezone.localdate()
+    is_editable = menu.menu_date == today
+
+    if request.method == "POST":
+        if not is_editable:
+            if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                return JsonResponse({"ok": False, "error": "Архивное меню уже закрыто."}, status=403)
+            return HttpResponseForbidden("Архивное меню уже закрыто.")
+
+        requested_ids = request.POST.getlist("items")
+        valid_ids = set(menu.items.filter(pk__in=requested_ids).values_list("pk", flat=True))
+        with transaction.atomic():
+            selection, _ = MenuSelection.objects.select_for_update().get_or_create(
+                menu=menu,
+                user=request.user,
+            )
+            selection.selected_items.all().delete()
+            MenuSelectionItem.objects.bulk_create(
+                [MenuSelectionItem(selection=selection, item_id=item_id) for item_id in valid_ids]
+            )
+            selection.save(update_fields=["updated_at"])
+
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            state = _menu_state(menu, request.user)
+            return JsonResponse(
+                {
+                    "ok": True,
+                    "participant_count": state["participant_count"],
+                    "selected_total": str(state["selected_total"]),
+                    "selected_ids": list(state["selected_ids"]),
+                    "items": [
+                        {
+                            "id": item.pk,
+                            "choice_count": item.choice_count,
+                            "choice_percent": item.choice_percent,
+                        }
+                        for item in state["items"]
+                    ],
+                }
+            )
+        return redirect(menu.get_absolute_url())
+
+    state = _menu_state(menu, request.user)
     return render(
         request,
         "canteen/menu_detail.html",
         {
             "menu": menu,
-            "groups": _menu_groups(items),
-            "has_selected": selection is not None,
-            "participant_count": participant_count,
-            "selected_total": selected_total,
+            "is_editable": is_editable,
+            "show_results": state["has_selected"] or not is_editable,
+            **state,
         },
     )
 
