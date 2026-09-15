@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from .models import AchievementUnlock, Article, EditorialLetter, ReaderArticleView
 from .reader_identity import reader_fingerprint
+from .reader_marks_games import sync_game_marks
 
 
 CORRESPONDENT_RULES = (
@@ -208,4 +209,5 @@ def sync_reader_marks(user):
     _sync_volume_marks(user, views)
     _sync_archive_mark(user, views)
     _sync_complete_month_mark(user, views)
+    sync_game_marks(user)
     return list(AchievementUnlock.objects.filter(user=user))
