@@ -89,10 +89,12 @@ def parse_menu_text(source_text):
 
 
 @transaction.atomic
-def save_menu_from_text(menu_date, source_text, *, publish=False):
+def save_menu_from_text(menu_date, source_text, *, title="", lead="", publish=False):
     normalized_source = _normalize_yo(source_text).strip()
     parsed_items = parse_menu_text(normalized_source)
     menu, _ = DailyMenu.objects.select_for_update().get_or_create(menu_date=menu_date)
+    menu.title = _normalize_yo(title).strip()
+    menu.lead = _normalize_yo(lead).strip()
     menu.source_text = normalized_source
     if publish:
         menu.is_published = True

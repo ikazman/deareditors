@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static l10n %}
 
-{% block title %}Меню столовой на {{ menu.menu_date|date:"j E" }} — Dear Editors{% endblock %}
+{% block title %}{{ menu.display_title }} — Dear Editors{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'canteen/menu.css' %}">
@@ -12,11 +12,12 @@
 <section class="menu-page">
     <a class="article-back" href="{% url 'menu-archive' %}">К архиву меню</a>
     <p class="rubric">Меню дня · {{ menu.menu_date|date:"j E Y" }}</p>
-    <h1 class="menu-title">Меню столовой на {{ menu.menu_date|date:"j E" }}</h1>
+    <h1 class="menu-title">{{ menu.display_title }}</h1>
+    <p class="menu-lead">{{ menu.display_lead }}</p>
     {% if is_editable %}
-        <p class="menu-lead">Что сегодня брать? Отметьте все, что планируете взять. После сохранения редакция покажет выбор остальных читателей.</p>
+        <p class="menu-instruction">Отметьте все, что планируете взять. После сохранения редакция покажет выбор остальных читателей.</p>
     {% else %}
-        <p class="menu-lead">Архив выпуска. Выбор закрыт; редакция сохраняет собственный выбор читателя и итоговые предпочтения участников.</p>
+        <p class="menu-instruction">Архив выпуска. Выбор закрыт.</p>
     {% endif %}
 
     <form

@@ -152,9 +152,14 @@ def menu_detail(request, menu_date):
 def editor_menu(request):
     today = timezone.localdate()
     requested_date = request.GET.get("date")
-    menu = None
+    target_date = today
     if requested_date:
-        menu = DailyMenu.objects.filter(menu_date=requested_date).first()
+        try:
+            target_date = date.fromisoformat(requested_date)
+        except ValueError:
+            target_date = today
+
+    menu = DailyMenu.objects.filter(menu_date=target_date).first()
 
     if request.method == "POST":
         form = DailyMenuForm(request.POST)
@@ -163,6 +168,8 @@ def editor_menu(request):
                 menu = save_menu_from_text(
                     form.cleaned_data["menu_date"],
                     form.cleaned_data["source_text"],
+                    title=form.cleaned_data["title"],
+                    lead=form.cleaned_data["lead"],
                     publish=request.POST.get("action") == "publish",
                 )
             except ValidationError as exc:
@@ -174,11 +181,11 @@ def editor_menu(request):
                     messages.success(request, "Меню сохранено как черновик.")
                 return redirect(f"/editor/menu/?date={menu.menu_date.isoformat()}")
     else:
-        if menu is None:
-            menu = DailyMenu.objects.filter(menu_date=today).first()
         form = DailyMenuForm(
             initial={
-                "menu_date": menu.menu_date if menu else today,
+                "menu_date": target_date,
+                "title": menu.display_title if menu else DailyMenu.default_title_for(target_date),
+                "lead": menu.display_lead if menu else DailyMenu.DEFAULT_LEAD,
                 "source_text": menu.source_text if menu else "",
             }
         )

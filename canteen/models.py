@@ -1,10 +1,15 @@
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
+from django.utils.formats import date_format
 
 
 class DailyMenu(models.Model):
+    DEFAULT_LEAD = "Редакция сообщит, что выбирали коллеги."
+
     menu_date = models.DateField("дата", unique=True)
+    title = models.CharField("заголовок", max_length=220, blank=True, default="")
+    lead = models.TextField("лид", blank=True, default="")
     source_text = models.TextField("исходный текст", blank=True)
     is_published = models.BooleanField("опубликовано", default=False)
     created_at = models.DateTimeField("создано", auto_now_add=True)
@@ -17,6 +22,18 @@ class DailyMenu(models.Model):
 
     def __str__(self):
         return f"Меню на {self.menu_date:%d.%m.%Y}"
+
+    @classmethod
+    def default_title_for(cls, menu_date):
+        return f"Меню столовой на {date_format(menu_date, 'j E')}"
+
+    @property
+    def display_title(self):
+        return self.title.strip() or self.default_title_for(self.menu_date)
+
+    @property
+    def display_lead(self):
+        return self.lead.strip() or self.DEFAULT_LEAD
 
     def get_absolute_url(self):
         return reverse("menu-detail", kwargs={"menu_date": self.menu_date.isoformat()})

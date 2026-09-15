@@ -124,7 +124,7 @@ class MenuViewsTests(TestCase):
         response = self.client.get(reverse("menu-archive"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Архив рубрики")
-        self.assertContains(response, f"Меню столовой на {self.today.day}")
+        self.assertContains(response, self.menu.display_title)
 
     def test_archive_shows_personal_total(self):
         selection = MenuSelection.objects.create(menu=self.menu, user=self.reader)
@@ -178,6 +178,12 @@ class MenuViewsTests(TestCase):
         response = self.client.get(reverse("editor-menu"))
         self.assertRedirects(response, reverse("article-list"))
 
+    def test_editor_prefills_default_title_and_lead(self):
+        self.client.force_login(self.editor)
+        response = self.client.get(reverse("editor-menu"))
+        self.assertContains(response, DailyMenu.default_title_for(self.today))
+        self.assertContains(response, DailyMenu.DEFAULT_LEAD)
+
     def test_editor_can_import_and_publish_menu(self):
         self.client.force_login(self.editor)
         target_date = self.today + timedelta(days=1)
@@ -190,21 +196,56 @@ class MenuViewsTests(TestCase):
         self.assertTrue(menu.is_published)
         self.assertEqual(menu.items.count(), 5)
 
+    def test_editor_can_customize_title_and_lead(self):
+        self.client.force_login(self.editor)
+        response = self.client.post(
+            reverse("editor-menu"),
+            {
+                "menu_date": self.today.isoformat(),
+                "title": "Обеденный вопрос решен",
+                "lead": "Редакция уточнила положение дел к полудню.",
+                "source_text": SAMPLE_MENU,
+                "action": "save",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.menu.refresh_from_db()
+        self.assertEqual(self.menu.title, "Обеденный вопрос решен")
+        self.assertEqual(self.menu.lead, "Редакция уточнила положение дел к полудню.")
+
+        self.client.force_login(self.reader)
+        detail = self.client.get(self.menu.get_absolute_url())
+        feed = self.client.get(reverse("article-list"))
+        archive = self.client.get(reverse("menu-archive"))
+        for page in (detail, feed, archive):
+            self.assertContains(page, "Обеденный вопрос решен")
+        self.assertContains(detail, "Редакция уточнила положение дел к полудню.")
+        self.assertContains(feed, "Редакция уточнила положение дел к полудню.")
+
     def test_editor_import_normalizes_yo_in_saved_menu(self):
         self.client.force_login(self.editor)
         target_date = self.today + timedelta(days=2)
         source_text = "Салаты:\n- Т\u0451ртая св\u0451кла — 79 руб. 110 г."
         response = self.client.post(
             reverse("editor-menu"),
-            {"menu_date": target_date.isoformat(), "source_text": source_text, "action": "publish"},
+            {
+                "menu_date": target_date.isoformat(),
+                "title": "Вс\u0451 на месте",
+                "lead": "Редакция вс\u0451 проверила.",
+                "source_text": source_text,
+                "action": "publish",
+            },
         )
         self.assertEqual(response.status_code, 302)
         menu = DailyMenu.objects.get(menu_date=target_date)
         self.assertNotIn("\u0451", menu.source_text.lower())
+        self.assertNotIn("\u0451", menu.title.lower())
+        self.assertNotIn("\u0451", menu.lead.lower())
         self.assertEqual(menu.items.get().name, "Тертая свекла")
 
     def test_today_menu_card_appears_in_feed(self):
         self.client.force_login(self.reader)
         response = self.client.get(reverse("article-list"))
-        self.assertContains(response, "Меню столовой на сегодня")
+        self.assertContains(response, self.menu.display_title)
+        self.assertContains(response, DailyMenu.DEFAULT_LEAD)
         self.assertContains(response, "Выбрать обед")
