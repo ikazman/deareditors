@@ -89,53 +89,79 @@ def _publication_time(target_date):
     )
 
 
-def _ensure_publication(daily_word: DailyWord) -> Article:
-    now = timezone.now()
+def _wordly_slug(target_date):
+    return f"wordly-{target_date:%Y-%m-%d}"
 
-    if daily_word.article_id:
-        article = daily_word.article
-        if (
-            article.status == Article.Status.PUBLISHED
-            and article.published_at is not None
-            and article.published_at <= now
-        ):
-            published_at = article.published_at
-        else:
-            published_at = _publication_time(daily_word.date)
-        article.title = WORDLY_TITLE
-        article.rubric = WORDLY_RUBRIC
-        article.lead = WORDLY_LEAD
-        article.body = ""
-        article.author_name = "Дорогая редакция"
-        article.status = Article.Status.PUBLISHED
-        article.published_at = published_at
-        article.save(
-            update_fields=[
-                "title",
-                "rubric",
-                "lead",
-                "body",
-                "author_name",
-                "status",
-                "published_at",
-                "updated_at",
-            ]
-        )
-        return article
 
-    article = Article.objects.create(
-        title=WORDLY_TITLE,
-        slug=f"wordly-{daily_word.date:%Y-%m-%d}",
-        rubric=WORDLY_RUBRIC,
-        lead=WORDLY_LEAD,
-        body="",
-        author_name="Дорогая редакция",
-        status=Article.Status.PUBLISHED,
-        published_at=_publication_time(daily_word.date),
+def _is_orphaned_wordly_article(article: Article) -> bool:
+    return (
+        article.rubric == WORDLY_RUBRIC
+        and article.title == WORDLY_TITLE
+        and article.author_name == "Дорогая редакция"
     )
+
+
+def _configure_publication(article: Article, daily_word: DailyWord) -> Article:
+    now = timezone.now()
+    if (
+        article.status == Article.Status.PUBLISHED
+        and article.published_at is not None
+        and article.published_at <= now
+    ):
+        published_at = article.published_at
+    else:
+        published_at = _publication_time(daily_word.date)
+
+    article.title = WORDLY_TITLE
+    article.rubric = WORDLY_RUBRIC
+    article.lead = WORDLY_LEAD
+    article.body = ""
+    article.author_name = "Дорогая редакция"
+    article.status = Article.Status.PUBLISHED
+    article.published_at = published_at
+    article.save(
+        update_fields=[
+            "title",
+            "rubric",
+            "lead",
+            "body",
+            "author_name",
+            "status",
+            "published_at",
+            "updated_at",
+        ]
+    )
+    return article
+
+
+def _ensure_publication(daily_word: DailyWord) -> Article:
+    if daily_word.article_id:
+        return _configure_publication(daily_word.article, daily_word)
+
+    slug = _wordly_slug(daily_word.date)
+    article = Article.objects.select_for_update().filter(slug=slug).first()
+    if article is not None:
+        already_linked = DailyWord.objects.filter(article=article).exclude(pk=daily_word.pk).exists()
+        if already_linked or not _is_orphaned_wordly_article(article):
+            raise ValidationError(
+                "Служебный адрес выпуска Вордли уже занят другой публикацией. "
+                "Редакции нужно проверить публикации на эту дату."
+            )
+    else:
+        article = Article.objects.create(
+            title=WORDLY_TITLE,
+            slug=slug,
+            rubric=WORDLY_RUBRIC,
+            lead=WORDLY_LEAD,
+            body="",
+            author_name="Дорогая редакция",
+            status=Article.Status.PUBLISHED,
+            published_at=_publication_time(daily_word.date),
+        )
+
     daily_word.article = article
     daily_word.save(update_fields=["article", "updated_at"])
-    return article
+    return _configure_publication(article, daily_word)
 
 
 @transaction.atomic
