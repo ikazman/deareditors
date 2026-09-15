@@ -1,6 +1,7 @@
 .menu-page { max-width: 40rem; padding: clamp(2.1rem, 5vw, 3rem) 0 5rem; }
 .menu-title { max-width: 20ch; margin: 0; font-family: "Playfair Display", serif; font-size: clamp(2.2rem, 6vw, 3.9rem); font-weight: 900; line-height: .97; letter-spacing: -.02em; text-wrap: balance; }
 .menu-lead { max-width: 34rem; margin: .8rem 0 0; color: var(--ink-soft); font-size: .98rem; line-height: 1.5; }
+.menu-instruction { max-width: 34rem; margin: .45rem 0 0; color: #8a8278; font-size: .8rem; line-height: 1.45; }
 .menu-group { margin: 1.55rem 0 0; }
 .menu-group h2 { margin: 0 0 .22rem; padding-bottom: .28rem; border-bottom: 1px solid var(--ink); font-family: "Playfair Display", serif; font-size: 1.18rem; line-height: 1.2; }
 .menu-items { display: grid; gap: 0; }
