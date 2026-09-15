@@ -1,0 +1,11 @@
+{% if menu %}
+<article class="entry entry--menu">
+    <div class="byline">
+        <span class="stamp">{{ menu.menu_date|date:"j E Y" }}</span>
+        <span class="desk">Меню дня</span>
+    </div>
+    <h2><a href="{{ menu.get_absolute_url }}">Меню столовой на сегодня</a></h2>
+    <p>Редакция получила сведения о сегодняшнем предложении столовой. Читатели могут отметить предполагаемый выбор и ознакомиться с агрегированными предпочтениями коллег.</p>
+    <a class="more more--nav" href="{{ menu.get_absolute_url }}">Выбрать обед</a>
+</article>
+{% endif %}

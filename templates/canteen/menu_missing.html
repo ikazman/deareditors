@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block title %}Меню дня — Dear Editors{% endblock %}
+
+{% block content %}
+<section class="letter-page letter-page--sent">
+    <p class="rubric">Меню дня</p>
+    <h1 class="letter-title">Редакция пока не получила меню.</h1>
+    <p class="letter-note">Сведения о сегодняшнем обеде отсутствуют. Это может быть как технической задержкой, так и проявлением более сложных процессов.</p>
+    <a class="more more--nav" href="{% url 'article-list' %}">К редакционной ленте</a>
+</section>
+{% endblock %}

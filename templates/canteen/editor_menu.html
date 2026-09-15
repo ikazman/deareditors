@@ -1,0 +1,59 @@
+{% extends 'editor/base.html' %}
+
+{% block title %}Меню дня — Редакционный стол{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <p class="rubric">Ежедневная рубрика</p>
+        <h1 class="page-title">Меню дня</h1>
+    </div>
+    {% if menu and menu.is_published %}
+        <div class="page-head__actions"><a class="btn btn--quiet" href="{{ menu.get_absolute_url }}">Открыть меню</a></div>
+    {% endif %}
+</div>
+
+<form method="post" class="editor-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div class="field">
+        <label for="{{ form.menu_date.id_for_label }}">{{ form.menu_date.label }}</label>
+        {{ form.menu_date }}
+        {{ form.menu_date.errors }}
+    </div>
+    <div class="field">
+        <label for="{{ form.source_text.id_for_label }}">{{ form.source_text.label }}</label>
+        <p class="field-hint">Можно вставить исходный текст как есть: разделы, тире, цены и выход блюда редакция разберет сама.</p>
+        {{ form.source_text }}
+        {{ form.source_text.errors }}
+    </div>
+    <div class="form-actions">
+        <button class="btn btn--quiet" type="submit" name="action" value="save">Сохранить черновик</button>
+        <button class="btn" type="submit" name="action" value="publish">Опубликовать</button>
+    </div>
+</form>
+
+<section style="margin-top: 3rem;">
+    <p class="rubric">Последние меню</p>
+    <ul class="desk-list">
+        {% for recent in recent_menus %}
+            <li class="desk-row">
+                <div>
+                    <div class="desk-row__meta">
+                        {% if recent.is_published %}<span class="status">Опубликовано</span>{% else %}<span class="status status--draft">Черновик</span>{% endif %}
+                        <span class="stamp">{{ recent.menu_date|date:"d.m.Y" }}</span>
+                    </div>
+                    <h2 class="desk-row__title"><a href="{% url 'editor-menu' %}?date={{ recent.menu_date|date:'Y-m-d' }}">Меню на {{ recent.menu_date|date:"j E" }}</a></h2>
+                    <p class="desk-row__lead">{{ recent.item_count }} позиций · выбор сделали {{ recent.participant_count }}</p>
+                </div>
+                <div class="desk-row__actions">
+                    <a href="{% url 'editor-menu' %}?date={{ recent.menu_date|date:'Y-m-d' }}">Править</a>
+                    {% if recent.is_published %}<a href="{{ recent.get_absolute_url }}">Смотреть</a>{% endif %}
+                </div>
+            </li>
+        {% empty %}
+            <li class="empty"><strong>Меню еще не публиковались.</strong></li>
+        {% endfor %}
+    </ul>
+</section>
+{% endblock %}
