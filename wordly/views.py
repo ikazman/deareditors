@@ -3,8 +3,9 @@ from datetime import date
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.utils import timezone
 
 from news.auth import editor_required
@@ -67,6 +68,17 @@ def _game_context(request, daily_word: DailyWord, form: GuessForm | None = None)
     }
 
 
+def _wordly_partial_response(request, daily_word, form=None, *, ok=True, status=200):
+    context = _game_context(request, daily_word, form)
+    return JsonResponse(
+        {
+            "ok": ok,
+            "html": render_to_string("wordly/_game_state.html", context, request=request),
+        },
+        status=status,
+    )
+
+
 @login_required
 def wordly_archive(request):
     words = list(
@@ -127,7 +139,12 @@ def wordly_play(request, year: int, month: int, day: int):
             except ValidationError as exc:
                 form.add_error("guess", exc.message)
             else:
+                if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                    return _wordly_partial_response(request, daily_word)
                 return redirect("wordly-play", year=year, month=month, day=day)
+
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return _wordly_partial_response(request, daily_word, form, ok=False, status=400)
 
     return render(request, "wordly/game.html", _game_context(request, daily_word, form))
 
