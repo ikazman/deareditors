@@ -77,7 +77,7 @@
 
             total.hidden = false;
             total.querySelector("strong").textContent = `${formatRubles(payload.selected_total)} ₽`;
-            footnote.textContent = `Выбор сохранен. Участников: ${payload.participant_count}. Можно передумать до конца дня.`;
+            footnote.textContent = "Выбор сохранен. Можно передумать до конца дня.";
             submit.textContent = "Сохранено";
         } catch (error) {
             footnote.textContent = error.message || "Не удалось сохранить выбор.";
