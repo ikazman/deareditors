@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Count, Exists, OuterRef
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
@@ -62,11 +62,12 @@ def _menu_state(menu, user):
 @login_required
 def menu_archive(request):
     record_daily_visit(request.user)
+    today = timezone.localdate()
     user_selection = MenuSelection.objects.filter(menu_id=OuterRef("pk"), user=request.user)
     menus = (
         DailyMenu.objects.filter(
             is_published=True,
-            menu_date__lte=timezone.localdate(),
+            menu_date__lte=today,
         )
         .annotate(
             participant_count=Count("selections", distinct=True),
@@ -74,7 +75,7 @@ def menu_archive(request):
         )
         .order_by("-menu_date")
     )
-    return render(request, "canteen/menu_archive.html", {"menus": menus})
+    return render(request, "canteen/menu_archive.html", {"menus": menus, "today": today})
 
 
 @login_required
@@ -87,8 +88,15 @@ def menu_detail(request, menu_date):
 
     menu = get_object_or_404(DailyMenu, menu_date=parsed_date, is_published=True)
     record_daily_visit(request.user)
+    today = timezone.localdate()
+    is_editable = menu.menu_date == today
 
     if request.method == "POST":
+        if not is_editable:
+            if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                return JsonResponse({"ok": False, "error": "Архивное меню уже закрыто."}, status=403)
+            return HttpResponseForbidden("Архивное меню уже закрыто.")
+
         requested_ids = request.POST.getlist("items")
         valid_ids = set(menu.items.filter(pk__in=requested_ids).values_list("pk", flat=True))
         with transaction.atomic():
@@ -128,6 +136,8 @@ def menu_detail(request, menu_date):
         "canteen/menu_detail.html",
         {
             "menu": menu,
+            "is_editable": is_editable,
+            "show_results": state["has_selected"] or not is_editable,
             **state,
         },
     )
