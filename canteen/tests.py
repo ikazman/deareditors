@@ -37,7 +37,7 @@ class MenuParserTests(SimpleTestCase):
         self.assertEqual(items[-1].category, MenuItem.Category.DRINK)
 
     def test_parser_normalizes_yo_to_e(self):
-        items = parse_menu_text("Салаты:\n- Тёртая свёкла — 79 руб. 110 г.")
+        items = parse_menu_text("Салаты:\n- Т\u0451ртая св\u0451кла — 79 руб. 110 г.")
         self.assertEqual(items[0].name, "Тертая свекла")
 
 
@@ -142,8 +142,8 @@ class MenuViewsTests(TestCase):
         self.client.force_login(self.reader)
         detail = self.client.get(self.menu.get_absolute_url()).content.decode("utf-8")
         archive = self.client.get(reverse("menu-archive")).content.decode("utf-8")
-        self.assertNotIn("ё", detail.lower())
-        self.assertNotIn("ё", archive.lower())
+        self.assertNotIn("\u0451", detail.lower())
+        self.assertNotIn("\u0451", archive.lower())
 
     def test_past_menu_is_read_only_and_shows_final_results(self):
         past_menu = DailyMenu.objects.create(
@@ -193,14 +193,14 @@ class MenuViewsTests(TestCase):
     def test_editor_import_normalizes_yo_in_saved_menu(self):
         self.client.force_login(self.editor)
         target_date = self.today + timedelta(days=2)
-        source_text = "Салаты:\n- Тёртая свёкла — 79 руб. 110 г."
+        source_text = "Салаты:\n- Т\u0451ртая св\u0451кла — 79 руб. 110 г."
         response = self.client.post(
             reverse("editor-menu"),
             {"menu_date": target_date.isoformat(), "source_text": source_text, "action": "publish"},
         )
         self.assertEqual(response.status_code, 302)
         menu = DailyMenu.objects.get(menu_date=target_date)
-        self.assertNotIn("ё", menu.source_text.lower())
+        self.assertNotIn("\u0451", menu.source_text.lower())
         self.assertEqual(menu.items.get().name, "Тертая свекла")
 
     def test_today_menu_card_appears_in_feed(self):
