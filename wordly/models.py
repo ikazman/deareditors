@@ -1,5 +1,7 @@
 from django.conf import settings
 from django.db import models
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 from django.urls import reverse
 
 
@@ -30,6 +32,15 @@ class DailyWord(models.Model):
             "wordly-play",
             kwargs={"year": self.date.year, "month": self.date.month, "day": self.date.day},
         )
+
+
+@receiver(post_delete, sender=DailyWord)
+def delete_daily_word_article(sender, instance, **kwargs):
+    if not instance.article_id:
+        return
+    from news.models import Article
+
+    Article.objects.filter(pk=instance.article_id).delete()
 
 
 class WordlyGame(models.Model):
