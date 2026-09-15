@@ -17,14 +17,19 @@
                 <span class="menu-archive__date">{{ menu.menu_date|date:"d.m.Y" }}</span>
                 <span class="menu-archive__title">Меню столовой на {{ menu.menu_date|date:"j E" }}</span>
                 <span class="menu-archive__status">
-                    {% if menu.user_selected %}Выбрано{% elif menu.menu_date == today %}Сегодня{% else %}Открыть{% endif %}
-                    {% if menu.participant_count %} · {{ menu.participant_count }}{% endif %}
+                    {% if menu.user_selected %}
+                        Ваш обед: {{ menu.user_total|default_if_none:"0"|floatformat:"-2" }} ₽
+                    {% elif menu.menu_date == today %}
+                        Сегодня
+                    {% else %}
+                        Открыть
+                    {% endif %}
                 </span>
             </a>
         {% empty %}
             <div class="empty">
                 <p>Архив меню пока пуст.</p>
-                <strong>Редакция не исключает, что столовая всё же работает.</strong>
+                <strong>Редакция не исключает, что столовая все же работает.</strong>
             </div>
         {% endfor %}
     </div>
