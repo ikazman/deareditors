@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Архив меню — Dear Editors{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'canteen/menu.css' %}">{% endblock %}
+
+{% block content %}
+<section class="menu-page menu-archive">
+    <a class="article-back" href="{% url 'article-list' %}">К редакционной ленте</a>
+    <p class="rubric">Архив рубрики</p>
+    <h1 class="menu-title">Меню дня</h1>
+    <p class="menu-lead">Здесь остаются опубликованные меню столовой. К прошлому дню можно вернуться и посмотреть собственный выбор и итоговую статистику.</p>
+
+    <div class="menu-archive__list">
+        {% for menu in menus %}
+            <a class="menu-archive__item" href="{{ menu.get_absolute_url }}">
+                <span class="menu-archive__date">{{ menu.menu_date|date:"d.m.Y" }}</span>
+                <span class="menu-archive__title">Меню столовой на {{ menu.menu_date|date:"j E" }}</span>
+                <span class="menu-archive__status">
+                    {% if menu.user_selected %}Выбрано{% elif menu.menu_date == today %}Выбрать{% else %}Открыть{% endif %}
+                    {% if menu.participant_count %} · {{ menu.participant_count }}{% endif %}
+                </span>
+            </a>
+        {% empty %}
+            <div class="empty">
+                <p>Архив меню пока пуст.</p>
+                <strong>Редакция не исключает, что столовая всё же работает.</strong>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}
