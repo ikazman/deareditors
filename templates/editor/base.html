@@ -13,6 +13,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'news/editor.css' %}">
+    <link rel="stylesheet" href="{% static 'news/editor-mail.css' %}">
     <link rel="stylesheet" href="{% static 'news/editor-toolbar.css' %}">
     <link rel="stylesheet" href="{% static 'news/article-images.css' %}">
     <link rel="stylesheet" href="{% static 'news/editor-actions.css' %}">
@@ -20,6 +21,7 @@
     <link rel="stylesheet" href="{% static 'news/editor-invites.css' %}">
     <link rel="stylesheet" href="{% static 'wordly/wordly.css' %}">
     <script src="{% static 'news/editor.js' %}" defer></script>
+    <script src="{% static 'news/editor-mail.js' %}" defer></script>
 </head>
 <body>
 <header class="wrap masthead">
@@ -28,7 +30,13 @@
         <span class="masthead__desk">Редакционный стол</span>
     </div>
     <nav class="masthead__nav">
-        <a href="{% url 'editor-inbox' %}"><span class="nav-label nav-label--desktop">Почта редакции</span><span class="nav-label nav-label--mobile">Почта</span></a>
+        <a class="editor-mail-link" href="{% url 'editor-inbox' %}" data-editor-mail-link data-status-url="{% url 'editor-mail-status' %}">
+            <span class="nav-label nav-label--desktop">Почта редакции</span><span class="nav-label nav-label--mobile">Почта</span>
+            <span class="mail-count" data-editor-mail-count hidden></span>
+        </a>
+        <button class="nav-link mail-notification-toggle" type="button" data-mail-notification-toggle hidden title="Включить системные уведомления о новых письмах">
+            <span class="nav-label nav-label--desktop">Включить уведомления</span><span class="nav-label nav-label--mobile">Оповещения</span>
+        </button>
         <a href="{% url 'editor-invitations' %}">Приглашения</a>
         <a href="{% url 'editor-integrations' %}"><span class="nav-label nav-label--desktop">Интеграции</span><span class="nav-label nav-label--mobile">ИИ</span></a>
         <a href="{% url 'article-list' %}"><span class="nav-label nav-label--desktop">Открыть издание</span><span class="nav-label nav-label--mobile">Издание</span></a>
