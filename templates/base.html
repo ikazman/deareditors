@@ -27,6 +27,7 @@
         </div>
         {% if request.user.is_authenticated %}
             <nav class="service-nav" aria-label="Служебная навигация">
+                <a href="{% url 'menu-today' %}">Меню дня</a>
                 <a href="{% url 'wordly' %}">Вордли</a>
                 <a href="{% url 'letter-create' %}">Письмо в редакцию</a>
                 <a href="{% url 'reader-card' %}">Читательский билет</a>
